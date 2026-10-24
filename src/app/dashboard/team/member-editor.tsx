@@ -14,6 +14,7 @@ import { MEMBER_ROLES, MEMBER_STATUSES, updateMembershipSchema, type UpdateMembe
 const ROLE_OPTIONS: Record<(typeof MEMBER_ROLES)[number], string> = {
   ceo: "CEO",
   cto_coo: "CTO / COO",
+  sales: "Sales",
   delivery: "Delivery",
 };
 

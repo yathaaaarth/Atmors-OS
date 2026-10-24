@@ -1,4 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
+import { config } from "dotenv";
+
+// Authenticated journeys need the dev Supabase credentials (skipped without them).
+config({ path: ".env.local", quiet: true });
 
 const port = Number(process.env.PORT ?? 3000);
 const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${port}`;
@@ -15,7 +19,8 @@ export default defineConfig({
   },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
-    { name: "mobile", use: { ...devices["Pixel 7"] } },
+    // Stateful journeys run once (desktop); mobile covers rendering and accessibility.
+    { name: "mobile", use: { ...devices["Pixel 7"] }, testIgnore: /proposal-journey/ },
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined

@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 
-import { AccessDenied } from "@/components/access-denied";
 import { BrandMark } from "@/components/brand";
 import { getMemberContext } from "@/server/authorization/member-context";
 import { can, ROLE_LABELS } from "@/server/authorization/permissions";
@@ -10,17 +9,19 @@ import { DashboardNav, type NavItem } from "./dashboard-nav";
 export default async function DashboardLayout({ children }: LayoutProps<"/dashboard">) {
   const result = await getMemberContext();
   if (result.status === "unauthenticated") redirect("/login?next=/dashboard");
-  if (result.status === "not_member") {
-    return (
-      <main className="flex flex-1 items-center px-4 py-16">
-        <AccessDenied description="The internal dashboard is for Atmors team members. Clients reach their portal through the link Atmors sent them." />
-      </main>
-    );
-  }
+  // Clients who sign in land here by default; their home is the portal.
+  if (result.status === "not_member") redirect("/portal");
 
   const { context } = result;
   // Navigation only reflects permissions; each page enforces them itself.
   const items: NavItem[] = [{ href: "/dashboard", label: "Work queue" }];
+  if (can(context, "prospects.read_all") || can(context, "prospects.create") || can(context, "prospects.write_own")) {
+    items.push({ href: "/dashboard/prospects", label: "Prospects" });
+  }
+  if (can(context, "proposals.read_all") || can(context, "proposals.manage") || can(context, "proposals.manage_own")) {
+    items.push({ href: "/dashboard/proposals", label: "Proposals" });
+  }
+  if (can(context, "proof.read")) items.push({ href: "/dashboard/proof", label: "Proof library" });
   if (can(context, "members.read")) items.push({ href: "/dashboard/team", label: "Team" });
   if (can(context, "audit.read")) items.push({ href: "/dashboard/audit", label: "Audit log" });
 

@@ -49,3 +49,17 @@ test("baseline security headers are present", async ({ request }) => {
   expect(headers["x-content-type-options"]).toBe("nosniff");
   expect(headers["x-powered-by"]).toBeUndefined();
 });
+
+test("an unknown invitation link reveals nothing and offers a new-link request", async ({ page }) => {
+  await page.goto(`/i/${"A".repeat(43)}`);
+  await expect(page.getByRole("heading", { name: "This link isn't valid" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Request a new link" })).toBeVisible();
+  await page.getByRole("button", { name: "Request a new link" }).click();
+  // Same answer whether or not the token exists.
+  await expect(page.getByText("Atmors will send you a fresh link")).toBeVisible();
+});
+
+test("malformed invitation paths are rejected without a database lookup", async ({ page }) => {
+  await page.goto("/i/not-a-token");
+  await expect(page.getByRole("heading", { name: "This link isn't valid" })).toBeVisible();
+});

@@ -12,6 +12,8 @@ export const ERROR_CODES = [
   "INVALID_STATE_TRANSITION",
   "VERSION_STALE",
   "CONFLICT",
+  "APPROVAL_REQUIRED",
+  "PROPOSAL_EXPIRED",
   "INVITATION_EXPIRED",
   "INVITATION_REVOKED",
   "PAYMENT_PENDING",
@@ -39,6 +41,16 @@ const ERROR_DEFINITIONS: Record<ErrorCode, { status: number; message: string; re
     retryable: false,
   },
   CONFLICT: { status: 409, message: "That change conflicts with the current data.", retryable: false },
+  APPROVAL_REQUIRED: {
+    status: 403,
+    message: "This proposal needs approval before it can be sent.",
+    retryable: false,
+  },
+  PROPOSAL_EXPIRED: {
+    status: 410,
+    message: "This proposal has passed its valid-until date. Ask Atmors for an updated version.",
+    retryable: false,
+  },
   INVITATION_EXPIRED: { status: 410, message: "This invitation link has expired.", retryable: false },
   INVITATION_REVOKED: { status: 410, message: "This invitation link is no longer valid.", retryable: false },
   PAYMENT_PENDING: { status: 409, message: "Your payment is still being confirmed.", retryable: true },
@@ -141,9 +153,9 @@ export function fromPostgrestError(error: PostgrestLikeError): AppError {
     case "42501":
       return new AppError("FORBIDDEN", { detail });
     case "23505":
-    case "23514":
       return new AppError("CONFLICT", { detail });
     case "22023":
+    case "23514":
     case "22P02":
     case "23502":
       return new AppError("VALIDATION_FAILED", { detail });

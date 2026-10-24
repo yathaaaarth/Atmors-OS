@@ -32,3 +32,39 @@ These are the technical decisions made during implementation. Product decisions 
 
 - **Date:** 2026-10-24 · **Status:** accepted
 - **Decision:** Public signup is disabled. Internal users are provisioned with `npm run bootstrap` and sign in with an emailed single-use link (PKCE through `/auth/callback`, or token hash through `/auth/confirm`). MFA (TOTP) for internal users is required before the live pilot.
+
+## D-006: `sales` role for commercial staff without approval authority
+
+- **Date:** 2026-10-25 · **Status:** accepted
+- **Context:** AT-008 requires a user who can build proposals but can't send discounted ones without approval. The PRD's four named people don't include such a role, and without one AT-008 can't actually occur.
+- **Decision:** Add `sales` with `_own` permissions (own prospects and proposals only) and no approval authority. No one holds it by default. CEO approval (`proposals.approve`) is required for discounts, non-standard terms and margin exceptions.
+
+## D-007: One `proof_assets` table for testimonials and case studies
+
+- **Date:** 2026-10-25 · **Status:** accepted
+- **Context:** The PRD lists `testimonials` and `case_studies` separately, but both have the same permission, publication, withdrawal and visibility rules.
+- **Decision:** Use a single table with `kind`, plus kind-specific check constraints. This keeps AT-009 visibility logic (`private.proof_is_visible`) in one place.
+
+## D-008: The secret key is used at runtime, for invitation sign-in only
+
+- **Date:** 2026-10-25 · **Status:** accepted
+- **Context:** Public signup is off, so an invited client has no account until one is provisioned. Looking up the email an invitation is bound to must not be possible from client sessions.
+- **Decision:** `src/server/supabase/admin.ts` (server-only) is used in exactly one server action, `beginInvitationSignIn`. It calls the service-role-only RPC `invitation_contact` and `auth.admin.createUser` for that email. `SUPABASE_SECRET_KEY` must therefore be set in the server environment (never `NEXT_PUBLIC_`).
+
+## D-009: Rate limiting at the hosting edge
+
+- **Date:** 2026-10-25 · **Status:** accepted, action before the pilot
+- **Context:** The PRD requires rate limits on public endpoints. In-memory limits don't work across serverless instances, and the token-holder RPCs are callable through Supabase's API as well as through the app.
+- **Decision:** Rely on token entropy and input caps now. Configure per-IP limits for `/i/*`, `/login` and `/api/*` in the hosting platform's firewall once hosting is chosen (provider register), and treat it as a pilot release gate. Supabase Auth already rate-limits magic-link emails.
+
+## D-010: Transactional email goes through Supabase Auth for now
+
+- **Date:** 2026-10-25 · **Status:** temporary
+- **Context:** Email delivery isn't approved yet (Resend is proposed). Supabase's built-in email sender is heavily rate-limited and only delivers to the project's team members.
+- **Decision:** Invitation links are copied by staff and sent manually ("Mark as sent" records the outreach). Magic links use Supabase Auth email. **Before real clients use it, configure custom SMTP (for example Resend) in Supabase Auth.** Otherwise clients won't receive sign-in links.
+
+## D-011: SQL rules are tested on in-process Postgres (PGlite)
+
+- **Date:** 2026-10-25 · **Status:** accepted
+- **Context:** The hosted project can't be reset, some cases (such as expiry) can't be arranged there, and CI has no Supabase credentials.
+- **Decision:** `tests/db` applies every migration to PGlite with stand-ins for Supabase `auth` and roles, and tests RPCs, triggers and constraints. RLS and grants are still verified against real Supabase in `tests/security`.

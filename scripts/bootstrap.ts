@@ -12,7 +12,7 @@ import { parseArgs } from "node:util";
 
 import { createClient } from "@supabase/supabase-js";
 
-const ROLES = ["ceo", "cto_coo", "delivery"] as const;
+const ROLES = ["ceo", "cto_coo", "sales", "delivery"] as const;
 type Role = (typeof ROLES)[number];
 
 const { values } = parseArgs({

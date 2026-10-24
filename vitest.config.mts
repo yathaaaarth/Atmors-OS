@@ -21,6 +21,11 @@ export default defineConfig({
       },
       {
         extends: true,
+        // SQL rules on in-process Postgres (PGlite); no secrets needed.
+        test: { name: "db", include: ["tests/db/**/*.test.ts"], testTimeout: 30_000, hookTimeout: 60_000 },
+      },
+      {
+        extends: true,
         test: {
           name: "security",
           include: ["tests/security/**/*.test.ts"],

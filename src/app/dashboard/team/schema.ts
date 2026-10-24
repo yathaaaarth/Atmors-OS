@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const MEMBER_ROLES = ["ceo", "cto_coo", "delivery"] as const;
+export const MEMBER_ROLES = ["ceo", "cto_coo", "sales", "delivery"] as const;
 export const MEMBER_STATUSES = ["active", "suspended", "revoked"] as const;
 
 export const updateMembershipSchema = z.object({

@@ -97,6 +97,7 @@ export async function ensureProspect(
   organizationId: string,
   ownerUserId: string,
   email: string,
+  name = "Fixture Prospect",
 ): Promise<string> {
   const { data: existing, error: findError } = await admin
     .from("prospects")
@@ -106,13 +107,13 @@ export async function ensureProspect(
     .maybeSingle();
   if (findError) throw findError;
   if (existing) {
-    const { error } = await admin.from("prospects").update({ owner_user_id: ownerUserId }).eq("id", existing.id);
+    const { error } = await admin.from("prospects").update({ owner_user_id: ownerUserId, name }).eq("id", existing.id);
     if (error) throw error;
     return existing.id;
   }
   const { data, error } = await admin
     .from("prospects")
-    .insert({ organization_id: organizationId, owner_user_id: ownerUserId, name: `Fixture ${email}`, email })
+    .insert({ organization_id: organizationId, owner_user_id: ownerUserId, name, email })
     .select("id")
     .single();
   if (error) throw error;

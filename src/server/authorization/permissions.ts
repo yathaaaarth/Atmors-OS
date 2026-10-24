@@ -11,8 +11,15 @@ export const PERMISSIONS = [
   "members.manage",
   "prospects.read_all",
   "prospects.write",
+  "prospects.write_own",
+  "prospects.create",
+  "proposals.read_all",
   "proposals.manage",
+  "proposals.manage_own",
   "proposals.approve",
+  "proof.read",
+  "proof.manage",
+  "proof.approve",
   "pricing.read",
   "finance.read",
   "contracts.manage",
@@ -28,6 +35,7 @@ export const ROLE_LABELS: Record<MemberRole, string> = {
   ceo: "CEO",
   cto_coo: "CTO / COO",
   delivery: "Delivery",
+  sales: "Sales",
 };
 
 export type MemberContext = {

@@ -41,7 +41,8 @@ describe("error envelope", () => {
 
 describe("fromPostgrestError", () => {
   it("prefers stable codes raised by RPCs", () => {
-    expect(fromPostgrestError({ code: "23514", message: "CONFLICT" }).code).toBe("CONFLICT");
+    expect(fromPostgrestError({ code: "23505", message: "CONFLICT" }).code).toBe("CONFLICT");
+    expect(fromPostgrestError({ code: "42501", message: "APPROVAL_REQUIRED" }).code).toBe("APPROVAL_REQUIRED");
     expect(fromPostgrestError({ code: "42501", message: "FORBIDDEN" }).code).toBe("FORBIDDEN");
     expect(fromPostgrestError({ code: "28000", message: "UNAUTHENTICATED" }).code).toBe("UNAUTHENTICATED");
   });
@@ -49,6 +50,7 @@ describe("fromPostgrestError", () => {
   it("falls back to Postgres error classes", () => {
     expect(fromPostgrestError({ code: "42501", message: "permission denied for table x" }).code).toBe("FORBIDDEN");
     expect(fromPostgrestError({ code: "23505", message: "duplicate key" }).code).toBe("CONFLICT");
+    expect(fromPostgrestError({ code: "23514", message: "violates check constraint" }).code).toBe("VALIDATION_FAILED");
     expect(fromPostgrestError({ code: "XX000", message: "boom" }).code).toBe("INTERNAL_ERROR");
   });
 });
