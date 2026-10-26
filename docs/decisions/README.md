@@ -193,3 +193,10 @@ These are the technical decisions made during implementation. Product decisions 
 - **Decision:** All other email goes through the `notifications` outbox. The built-in signer's one-time code is the exception: it is sent directly from the request with a unique idempotency key, and the database stores only its SHA-256 hash.
 - **Why:** outbox payloads are readable by staff with `operations.manage` and are kept for retries. A queued code would let staff see a client's code, which weakens the signature evidence (D-029), and the scheduler's delay of up to 5 minutes would eat into the code's 10 minutes. This is the same reasoning behind Supabase Auth sending sign-in links directly.
 - **Consequences:** if the email service is down, the signer sees an error and can request a new code; there is no automatic retry. Codes never appear in the database or the logs.
+
+## D-032: Token-hash sign-in links in production
+
+- **Date:** 2026-10-27 · **Status:** accepted
+- **Decision:** The production Magic Link email template links to `/auth/confirm?token_hash={{ .TokenHash }}&type=email`, which is verified on the server with `verifyOtp`. The default PKCE link (`/auth/callback?code=`) is not used there.
+- **Why:** a PKCE link only completes in the same browser, on the same site address, that requested it. On the first production sign-in it failed with "link invalid" once the email was opened elsewhere, and clients often open email on their phone. The token-hash link is still single use, expires in an hour, and works on any device.
+- **Consequences:** the template lives in the Supabase dashboard, not in the repository; `docs/deployment.md` lists it as a setup step. `/auth/callback` stays for local development.

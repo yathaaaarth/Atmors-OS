@@ -25,6 +25,7 @@ The pilot runs entirely on free plans (decision D-028). What each service gives,
    - Sign In / Providers: turn **off** "Allow new users to sign up".
    - URL Configuration: Site URL `https://<your-app-domain>`; Redirect URLs `https://<your-app-domain>/**`.
    - Multi-Factor: TOTP enabled.
+   - Emails → Templates → **Magic Link**: link to `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email` instead of the default `{{ .ConfirmationURL }}`. The default PKCE link only finishes in the browser that requested it, which fails when clients open email on their phone (D-032).
    - Emails → SMTP: host `smtp.resend.com`, port `465`, user `resend`, password = Resend API key, sender = your verified address.
 4. Storage: check the `client-assets` bucket exists and is **private**.
 5. Create the organization and staff (with production keys in a temporary `.env.prod.local`, deleted afterwards):
