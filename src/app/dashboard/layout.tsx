@@ -27,6 +27,9 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
   if (can(context, "finance.read") || can(context, "integrations.monitor")) {
     items.push({ href: "/dashboard/billing", label: "Billing" });
   }
+  if (can(context, "onboarding.manage")) items.push({ href: "/dashboard/onboarding", label: "Onboarding" });
+  // Delivery staff see the workspaces they are assigned to.
+  items.push({ href: "/dashboard/workspaces", label: "Workspaces" });
   if (can(context, "proof.read")) items.push({ href: "/dashboard/proof", label: "Proof library" });
   if (can(context, "members.read")) items.push({ href: "/dashboard/team", label: "Team" });
   if (can(context, "audit.read")) items.push({ href: "/dashboard/audit", label: "Audit log" });

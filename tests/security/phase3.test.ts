@@ -196,7 +196,7 @@ describe.skipIf(!hasSupabaseTestEnv)("Phase 3: booking, contracts and billing", 
     if (meetingIds.length) await admin.from("meetings").update({ status: "cancelled", cancelled_at: new Date().toISOString() }).in("id", meetingIds);
   });
 
-  it("AT-010: concurrent bookings for one host and time confirm exactly once", async () => {
+  it("AT-010: five concurrent bookings for one host and time confirm exactly once", async () => {
     const from = new Date(Date.now() + 2 * 3_600_000);
     const options = await anonClient().rpc("booking_options_with_token", {
       p_token_hash: tokenHashA,
@@ -218,11 +218,11 @@ describe.skipIf(!hasSupabaseTestEnv)("Phase 3: booking, contracts and billing", 
         p_idempotency_key: randomUUID(),
         p_correlation_id: corr(),
       });
-    const results = await Promise.all([attempt(), attempt(), attempt()]);
+    const results = await Promise.all(Array.from({ length: 5 }, attempt));
     for (const result of results) expect(result.error).toBeNull();
     const outcomes = results.map((result) => result.data as { status: string; meeting?: { id: string }; alternatives?: unknown[] });
     expect(outcomes.filter((outcome) => outcome.status === "booked")).toHaveLength(1);
-    expect(outcomes.filter((outcome) => outcome.status === "slot_unavailable")).toHaveLength(2);
+    expect(outcomes.filter((outcome) => outcome.status === "slot_unavailable")).toHaveLength(4);
     for (const outcome of outcomes) if (outcome.meeting) meetingIds.push(outcome.meeting.id);
     expect(outcomes.find((outcome) => outcome.alternatives)?.alternatives?.length).toBeGreaterThan(0);
   });

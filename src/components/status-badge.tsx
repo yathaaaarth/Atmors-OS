@@ -54,6 +54,24 @@ const LABELS: Record<string, string> = {
   ignored: "Ignored",
   open: "Open",
   done: "Done",
+  not_started: "Not started",
+  in_progress: "In progress",
+  submitted: "Submitted",
+  needs_information: "Needs information",
+  resubmitted: "Resubmitted",
+  blocked: "Blocked",
+  eligible: "Eligible",
+  active: "Active",
+  suspended: "Suspended",
+  closed: "Closed",
+  not_ready: "Not ready",
+  kickoff_ready: "Kickoff ready",
+  paused: "Paused",
+  todo: "To do",
+  planned: "Planned",
+  requested: "Requested",
+  client_confirmed: "Client confirmed",
+  verified: "Verified",
 };
 
 const ATTENTION = new Set([
@@ -68,8 +86,14 @@ const ATTENTION = new Set([
   "overdue",
   "refunded",
   "quarantined",
+  "needs_information",
+  "submitted",
+  "resubmitted",
+  "blocked",
+  "client_confirmed",
+  "paused",
 ]);
-const NEGATIVE = new Set(["declined", "disqualified", "withdrawn", "rejected", "revoked", "voided", "cancelled", "failed", "no_show", "disputed"]);
+const NEGATIVE = new Set(["declined", "disqualified", "withdrawn", "rejected", "revoked", "voided", "cancelled", "failed", "no_show", "disputed", "suspended"]);
 
 /** Status is always shown as text; colour only reinforces it (PRD §12). */
 export function StatusBadge({ status }: { status: string }) {

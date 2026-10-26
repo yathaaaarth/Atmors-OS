@@ -103,3 +103,27 @@ These are the technical decisions made during implementation. Product decisions 
 - **Decision:** Invoices are numbered `INV-<FY>-<seq>` per Indian financial year. The tax on each instalment is a proportional estimate of the accepted version's tax, stored in `tax_snapshot` with `review_required`. No credit notes yet: refunds and disputes are recorded as payment adjustments.
 - **Consequences:** A qualified accountant must approve numbering, GST treatment and credit-note handling before production (PRD §5.6).
 
+## D-017: One onboarding per client with immutable submission revisions
+
+- **Date:** 2026-10-27 · **Status:** accepted
+- **Decision:** Each client has one `onboardings` row (the state machine) with a mutable draft. Every submission creates an immutable `onboarding_submissions` revision with its own `onboarding_answers` (source `client`) and an answers hash; reviews are append-only and always target the latest revision (an older one is `VERSION_STALE`). Answers are cleaned in SQL against the versioned questionnaire: unknown keys and hidden follow-ups are dropped, types and options are checked. AI interpretations (Phase 5) live in a separate table and can never write answers (AT-021).
+- **Consequences:** Onboarding starts automatically when the agreement is executed, or earlier through `start_onboarding` when policy allows.
+
+## D-018: Uploads go through the app; the bucket is private
+
+- **Date:** 2026-10-27 · **Status:** accepted
+- **Context:** PRD §5.7 asks for type/size limits, content validation where feasible and short-lived signed URLs.
+- **Decision:** `POST /api/assets` (same-origin, signed-in) checks size, type, extension and content signature, registers the asset as the client (the database checks access and quota) and stores it in the private `client-assets` bucket with the system identity. Downloads go through `/api/assets/[id]`, which authorizes and audits, then redirects to a 60-second signed URL.
+- **Consequences:** Files pass through the app server (10 MB cap). No malware scanning yet (`scan_status = not_scanned`).
+
+## D-019: Workspaces activate automatically when eligible and never deactivate automatically
+
+- **Date:** 2026-10-27 · **Status:** accepted
+- **Decision:** The workspace is created (blocked) when the agreement is executed and follows the agreement's activation evaluation: it becomes active as soon as the configured conditions are met (AT-025). If conditions later fail (for example a refund), it stays active and a review task is raised; suspending is a human decision. Manual override needs `workspaces.override` and a reason, is audited and stays visibly marked, and never creates payment or signature records (AT-026). Kickoff readiness additionally needs approved onboarding and a delivery lead.
+
+## D-020: Per-host advisory lock for bookings
+
+- **Date:** 2026-10-27 · **Status:** accepted
+- **Context:** The hosted concurrency test showed that simultaneous inserts against the exclusion constraint can deadlock (40P01) instead of failing cleanly.
+- **Decision:** Booking and rescheduling take `pg_advisory_xact_lock` per host before writing, so concurrent requests queue; a deadlock, if one still occurs, is treated as "slot taken". The exclusion constraint remains the guarantee.
+

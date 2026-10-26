@@ -1,6 +1,6 @@
 # Authorization model
 
-Source: PRD §2 and §11. This document describes what is implemented as of Phase 3.
+Source: PRD §2 and §11. This document describes what is implemented as of Phase 4.
 
 ## Layers
 
@@ -25,7 +25,7 @@ Clients are never organization members, and they never read tables directly.
 - **Phase 3 projections:** `client_meetings`, `client_contracts` / `client_contract_view`, `client_invoices` / `client_invoice_view` and `client_payment_status` return client-safe JSON. Drafts and ready-to-send agreements are invisible to clients. Staff emails and internal IDs other than the record's own are never included.
 - **Projection:** the client view (`private.client_proposal_json`) contains only the sent version's terms, line items, schedule and currently visible proof. It never includes internal notes, drafts or internal IDs beyond the proposal itself.
 
-## Roles and permissions (policy v3)
+## Roles and permissions (policy v4)
 
 Grants are stored in `role_permissions`. The application only types the keys (`src/server/authorization/permissions.ts`).
 
@@ -55,6 +55,10 @@ Grants are stored in `role_permissions`. The application only types the keys (`s
 | scheduling.configure | | ✓ | | |
 | integrations.monitor | ✓ | ✓ | | |
 | operations.manage | | ✓ | | |
+| onboarding.manage | ✓ | ✓ | | |
+| workspaces.read_all | ✓ | ✓ | | |
+| workspaces.manage | | ✓ | | |
+| workspaces.override | | ✓ | | |
 | system.configure | | ✓ | | |
 | audit.read | ✓ | ✓ | | |
 
@@ -66,6 +70,8 @@ Notes:
 - **Sales** (policy v2) can manage only prospects and proposals they own. Sales users have no discount or approval authority, so any version with a discount, non-standard terms or a margin exception waits for a CEO approval (AT-008). No one holds this role by default.
 - **CTO/COO** sees every prospect but not proposals or pricing. This follows the PRD, which puts pricing strategy with the CEO. Granting `proposals.read_all` changes that.
 - **Phase 3 (policy v3).** Agreements, templates, invoices and payments sit with the CEO (`contracts.*`, `finance.read`, `billing.manage`). The CTO/COO sees activation evaluations (via `operations.manage`) and the provider exception queue (`integrations.monitor`, which returns no amounts or payloads), but not contract terms or invoices. Anyone may host calls: hosts see and manage their own meetings, prospect owners see meetings for their prospects, and only `scheduling.configure` changes who takes which call type.
+- **Phase 4 (policy v4): assignment-based access.** Delivery staff hold no organization-wide grants. Being on a workspace team (`workspace_members`) lets them read that workspace, its milestones, tasks and notes, and — only once onboarding is approved — the client's answers and files (`private.can_read_onboarding`). They never gain access to the CRM record, proposals, agreements or invoices; the workspace carries a display name so they don't need it. Task owners move their own tasks; the workspace lead and `workspaces.manage` manage the plan and post client-visible updates. Manual activation (`workspaces.override`) sits with the CTO/COO only and is reasoned, audited and visibly marked (AT-026).
+- **Clients** read onboarding and workspace data only through `client_onboarding` and `client_workspace`. Internal tasks, internal notes and blocking reasons never appear there. Files are downloaded through `/api/assets/[id]`, which authorizes and audits the request and redirects to a 60-second signed URL; the storage bucket is private with no storage policies.
 - **Ops tasks** are visible to their owner and to holders of the permission matching their visibility: `operations` → `operations.manage`, `commercial` → `prospects.read_all`, `finance` → `finance.read`.
 - `_own` permissions are checked against `owner_user_id` inside the RPCs and RLS helpers (`private.can_manage_prospect`, `private.can_manage_proposal`).
 

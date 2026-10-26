@@ -15,6 +15,92 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_grants: {
+        Row: {
+          client_note: string | null
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          granted_at: string | null
+          id: string
+          instructions: string | null
+          organization_id: string
+          owner_user_id: string | null
+          platform: string
+          prospect_id: string
+          requested_scope: string
+          revoked_at: string | null
+          status: Database["public"]["Enums"]["access_grant_status"]
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          client_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          granted_at?: string | null
+          id?: string
+          instructions?: string | null
+          organization_id: string
+          owner_user_id?: string | null
+          platform: string
+          prospect_id: string
+          requested_scope: string
+          revoked_at?: string | null
+          status?: Database["public"]["Enums"]["access_grant_status"]
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          client_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          granted_at?: string | null
+          id?: string
+          instructions?: string | null
+          organization_id?: string
+          owner_user_id?: string | null
+          platform?: string
+          prospect_id?: string
+          requested_scope?: string
+          revoked_at?: string | null
+          status?: Database["public"]["Enums"]["access_grant_status"]
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_grants_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_grants_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_grants_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_grants_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activation_evaluations: {
         Row: {
           blocking_reasons: string[]
@@ -227,6 +313,82 @@ export type Database = {
           },
           {
             foreignKeyName: "client_access_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_assets: {
+        Row: {
+          access_class: string
+          checksum: string
+          content_type: string
+          created_at: string
+          filename: string
+          id: string
+          onboarding_id: string | null
+          organization_id: string
+          prospect_id: string
+          scan_status: string
+          size_bytes: number
+          status: string
+          storage_key: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          access_class?: string
+          checksum: string
+          content_type: string
+          created_at?: string
+          filename: string
+          id?: string
+          onboarding_id?: string | null
+          organization_id: string
+          prospect_id: string
+          scan_status?: string
+          size_bytes: number
+          status?: string
+          storage_key: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          access_class?: string
+          checksum?: string
+          content_type?: string
+          created_at?: string
+          filename?: string
+          id?: string
+          onboarding_id?: string | null
+          organization_id?: string
+          prospect_id?: string
+          scan_status?: string
+          size_bytes?: number
+          status?: string
+          storage_key?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_assets_onboarding_id_fkey"
+            columns: ["onboarding_id"]
+            isOneToOne: false
+            referencedRelation: "onboardings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_assets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_assets_prospect_id_fkey"
             columns: ["prospect_id"]
             isOneToOne: false
             referencedRelation: "prospects"
@@ -976,6 +1138,332 @@ export type Database = {
             columns: ["prospect_id"]
             isOneToOne: false
             referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      milestones: {
+        Row: {
+          client_visible: boolean
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_at: string | null
+          id: string
+          organization_id: string
+          position: number
+          status: string
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          client_visible?: boolean
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          organization_id: string
+          position?: number
+          status?: string
+          title: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          client_visible?: boolean
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          organization_id?: string
+          position?: number
+          status?: string
+          title?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "milestones_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "milestones_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_answers: {
+        Row: {
+          answer_json: Json
+          answer_source: string
+          created_at: string
+          id: string
+          organization_id: string
+          question_key: string
+          submission_id: string
+        }
+        Insert: {
+          answer_json: Json
+          answer_source?: string
+          created_at?: string
+          id?: string
+          organization_id: string
+          question_key: string
+          submission_id: string
+        }
+        Update: {
+          answer_json?: Json
+          answer_source?: string
+          created_at?: string
+          id?: string
+          organization_id?: string
+          question_key?: string
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_answers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_answers_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_reviews: {
+        Row: {
+          correlation_id: string
+          created_at: string
+          decision: string
+          id: string
+          onboarding_id: string
+          organization_id: string
+          reasons: Json
+          reviewer_id: string | null
+          submission_id: string
+        }
+        Insert: {
+          correlation_id: string
+          created_at?: string
+          decision: string
+          id?: string
+          onboarding_id: string
+          organization_id: string
+          reasons?: Json
+          reviewer_id?: string | null
+          submission_id: string
+        }
+        Update: {
+          correlation_id?: string
+          created_at?: string
+          decision?: string
+          id?: string
+          onboarding_id?: string
+          organization_id?: string
+          reasons?: Json
+          reviewer_id?: string | null
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_reviews_onboarding_id_fkey"
+            columns: ["onboarding_id"]
+            isOneToOne: false
+            referencedRelation: "onboardings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_reviews_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_reviews_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_submissions: {
+        Row: {
+          answers_hash: string
+          id: string
+          onboarding_id: string
+          organization_id: string
+          revision: number
+          submitted_at: string
+          submitted_by: string | null
+          supersedes_submission_id: string | null
+          template_id: string
+        }
+        Insert: {
+          answers_hash: string
+          id?: string
+          onboarding_id: string
+          organization_id: string
+          revision: number
+          submitted_at?: string
+          submitted_by?: string | null
+          supersedes_submission_id?: string | null
+          template_id: string
+        }
+        Update: {
+          answers_hash?: string
+          id?: string
+          onboarding_id?: string
+          organization_id?: string
+          revision?: number
+          submitted_at?: string
+          submitted_by?: string | null
+          supersedes_submission_id?: string | null
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_submissions_onboarding_id_fkey"
+            columns: ["onboarding_id"]
+            isOneToOne: false
+            referencedRelation: "onboardings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_submissions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_submissions_supersedes_submission_id_fkey"
+            columns: ["supersedes_submission_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_submissions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "questionnaire_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboardings: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          current_submission_id: string | null
+          draft_answers: Json
+          id: string
+          info_requests: Json
+          organization_id: string
+          prospect_id: string
+          started_by: string | null
+          status: Database["public"]["Enums"]["onboarding_status"]
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          current_submission_id?: string | null
+          draft_answers?: Json
+          id?: string
+          info_requests?: Json
+          organization_id: string
+          prospect_id: string
+          started_by?: string | null
+          status?: Database["public"]["Enums"]["onboarding_status"]
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          current_submission_id?: string | null
+          draft_answers?: Json
+          id?: string
+          info_requests?: Json
+          organization_id?: string
+          prospect_id?: string
+          started_by?: string | null
+          status?: Database["public"]["Enums"]["onboarding_status"]
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboardings_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboardings_current_submission_fkey"
+            columns: ["current_submission_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboardings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboardings_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: true
+            referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboardings_started_by_fkey"
+            columns: ["started_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboardings_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "questionnaire_templates"
             referencedColumns: ["id"]
           },
         ]
@@ -2151,6 +2639,57 @@ export type Database = {
           },
         ]
       }
+      questionnaire_templates: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          key: string
+          name: string
+          organization_id: string
+          questions: Json
+          version: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key: string
+          name: string
+          organization_id: string
+          questions: Json
+          version: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          key?: string
+          name?: string
+          organization_id?: string
+          questions?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questionnaire_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questionnaire_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       role_permissions: {
         Row: {
           allowed: boolean
@@ -2250,6 +2789,112 @@ export type Database = {
           },
         ]
       }
+      tasks: {
+        Row: {
+          client_visible: boolean
+          completed_at: string | null
+          completion_evidence: string | null
+          created_at: string
+          created_by: string | null
+          dependency_id: string | null
+          description: string | null
+          due_at: string | null
+          id: string
+          internal_notes: string | null
+          milestone_id: string | null
+          organization_id: string
+          owner_user_id: string | null
+          priority: Database["public"]["Enums"]["task_priority"]
+          status: Database["public"]["Enums"]["task_status"]
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          client_visible?: boolean
+          completed_at?: string | null
+          completion_evidence?: string | null
+          created_at?: string
+          created_by?: string | null
+          dependency_id?: string | null
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          internal_notes?: string | null
+          milestone_id?: string | null
+          organization_id: string
+          owner_user_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"]
+          status?: Database["public"]["Enums"]["task_status"]
+          title: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          client_visible?: boolean
+          completed_at?: string | null
+          completion_evidence?: string | null
+          created_at?: string
+          created_by?: string | null
+          dependency_id?: string | null
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          internal_notes?: string | null
+          milestone_id?: string | null
+          organization_id?: string
+          owner_user_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"]
+          status?: Database["public"]["Enums"]["task_status"]
+          title?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_dependency_id_fkey"
+            columns: ["dependency_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "milestones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workflow_events: {
         Row: {
           aggregate_id: string
@@ -2294,6 +2939,215 @@ export type Database = {
           },
         ]
       }
+      workspace_members: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          organization_id: string
+          role: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          organization_id: string
+          role?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          organization_id?: string
+          role?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_members_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_members_organization_id_user_id_fkey"
+            columns: ["organization_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "organization_memberships"
+            referencedColumns: ["organization_id", "user_id"]
+          },
+          {
+            foreignKeyName: "workspace_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_updates: {
+        Row: {
+          author_id: string | null
+          author_type: Database["public"]["Enums"]["actor_type"]
+          body: string
+          created_at: string
+          id: string
+          organization_id: string
+          visibility: string
+          workspace_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          author_type: Database["public"]["Enums"]["actor_type"]
+          body: string
+          created_at?: string
+          id?: string
+          organization_id: string
+          visibility: string
+          workspace_id: string
+        }
+        Update: {
+          author_id?: string | null
+          author_type?: Database["public"]["Enums"]["actor_type"]
+          body?: string
+          created_at?: string
+          id?: string
+          organization_id?: string
+          visibility?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_updates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_updates_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspaces: {
+        Row: {
+          activated_at: string | null
+          activation_policy_version: number
+          blocked_reasons: string[]
+          client_name: string
+          contract_id: string
+          created_at: string
+          delivery_status: Database["public"]["Enums"]["delivery_status"]
+          eligible_at: string | null
+          id: string
+          kickoff_blockers: string[]
+          kickoff_ready_at: string | null
+          organization_id: string
+          override_active: boolean
+          override_at: string | null
+          override_by: string | null
+          override_reason: string | null
+          prospect_id: string
+          status: Database["public"]["Enums"]["workspace_status"]
+          status_reason: string | null
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          activation_policy_version?: number
+          blocked_reasons?: string[]
+          client_name: string
+          contract_id: string
+          created_at?: string
+          delivery_status?: Database["public"]["Enums"]["delivery_status"]
+          eligible_at?: string | null
+          id?: string
+          kickoff_blockers?: string[]
+          kickoff_ready_at?: string | null
+          organization_id: string
+          override_active?: boolean
+          override_at?: string | null
+          override_by?: string | null
+          override_reason?: string | null
+          prospect_id: string
+          status?: Database["public"]["Enums"]["workspace_status"]
+          status_reason?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          activation_policy_version?: number
+          blocked_reasons?: string[]
+          client_name?: string
+          contract_id?: string
+          created_at?: string
+          delivery_status?: Database["public"]["Enums"]["delivery_status"]
+          eligible_at?: string | null
+          id?: string
+          kickoff_blockers?: string[]
+          kickoff_ready_at?: string | null
+          organization_id?: string
+          override_active?: boolean
+          override_at?: string | null
+          override_by?: string | null
+          override_reason?: string | null
+          prospect_id?: string
+          status?: Database["public"]["Enums"]["workspace_status"]
+          status_reason?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspaces_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspaces_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspaces_override_by_fkey"
+            columns: ["override_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspaces_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: true
+            referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2334,6 +3188,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      asset_download_target: {
+        Args: { p_asset_id: string; p_correlation_id?: string }
+        Returns: Json
       }
       attach_payment_order: {
         Args: { p_payment_id: string; p_provider_order_id: string }
@@ -2419,11 +3277,16 @@ export type Database = {
         }
         Returns: Json
       }
+      client_confirm_access_grant: {
+        Args: { p_correlation_id?: string; p_grant_id: string; p_note?: string }
+        Returns: Json
+      }
       client_contract_view: { Args: { p_contract_id: string }; Returns: Json }
       client_contracts: { Args: never; Returns: Json }
       client_invoice_view: { Args: { p_invoice_id: string }; Returns: Json }
       client_invoices: { Args: never; Returns: Json }
       client_meetings: { Args: never; Returns: Json }
+      client_onboarding: { Args: never; Returns: Json }
       client_payment_status: { Args: { p_payment_id: string }; Returns: Json }
       client_prepare_signature: {
         Args: {
@@ -2435,6 +3298,16 @@ export type Database = {
       }
       client_proposal_view: { Args: { p_proposal_id: string }; Returns: Json }
       client_proposals: { Args: never; Returns: Json }
+      client_register_asset: {
+        Args: {
+          p_checksum: string
+          p_content_type: string
+          p_correlation_id?: string
+          p_filename: string
+          p_size_bytes: number
+        }
+        Returns: Json
+      }
       client_request_callback: {
         Args: {
           p_correlation_id?: string
@@ -2481,6 +3354,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      client_save_onboarding_draft: {
+        Args: { p_answers: Json; p_correlation_id?: string }
+        Returns: Json
+      }
       client_start_payment: {
         Args: {
           p_amount_minor?: number
@@ -2491,6 +3368,11 @@ export type Database = {
         }
         Returns: Json
       }
+      client_submit_onboarding: {
+        Args: { p_answers: Json; p_correlation_id?: string }
+        Returns: Json
+      }
+      client_workspace: { Args: never; Returns: Json }
       complete_ops_task: {
         Args: {
           p_correlation_id?: string
@@ -2740,6 +3622,10 @@ export type Database = {
         Args: { p_contract_id: string; p_correlation_id?: string }
         Returns: Json
       }
+      evaluate_workspace: {
+        Args: { p_correlation_id?: string; p_workspace_id: string }
+        Returns: Json
+      }
       fail_payment_start: {
         Args: { p_error_code: string; p_payment_id: string }
         Returns: {
@@ -2963,6 +3849,76 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      mark_asset_stored: {
+        Args: { p_asset_id: string; p_ok: boolean }
+        Returns: {
+          access_class: string
+          checksum: string
+          content_type: string
+          created_at: string
+          filename: string
+          id: string
+          onboarding_id: string | null
+          organization_id: string
+          prospect_id: string
+          scan_status: string
+          size_bytes: number
+          status: string
+          storage_key: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "client_assets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      override_workspace_activation: {
+        Args: {
+          p_correlation_id?: string
+          p_reason: string
+          p_workspace_id: string
+        }
+        Returns: {
+          activated_at: string | null
+          activation_policy_version: number
+          blocked_reasons: string[]
+          client_name: string
+          contract_id: string
+          created_at: string
+          delivery_status: Database["public"]["Enums"]["delivery_status"]
+          eligible_at: string | null
+          id: string
+          kickoff_blockers: string[]
+          kickoff_ready_at: string | null
+          organization_id: string
+          override_active: boolean
+          override_at: string | null
+          override_by: string | null
+          override_reason: string | null
+          prospect_id: string
+          status: Database["public"]["Enums"]["workspace_status"]
+          status_reason: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "workspaces"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      post_workspace_update: {
+        Args: {
+          p_body: string
+          p_correlation_id?: string
+          p_visibility: string
+          p_workspace_id: string
+        }
+        Returns: undefined
+      }
       prepare_countersignature: {
         Args: {
           p_checksum: string
@@ -3077,6 +4033,32 @@ export type Database = {
         Args: { p_correlation_id?: string; p_token_hash: string }
         Returns: string
       }
+      remove_asset: {
+        Args: { p_asset_id: string; p_correlation_id?: string }
+        Returns: {
+          access_class: string
+          checksum: string
+          content_type: string
+          created_at: string
+          filename: string
+          id: string
+          onboarding_id: string | null
+          organization_id: string
+          prospect_id: string
+          scan_status: string
+          size_bytes: number
+          status: string
+          storage_key: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "client_assets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       replace_invitation: {
         Args: {
           p_correlation_id?: string
@@ -3090,6 +4072,40 @@ export type Database = {
       reprocess_payment_event: {
         Args: { p_correlation_id?: string; p_event_id: string }
         Returns: string
+      }
+      request_access_grant: {
+        Args: {
+          p_correlation_id?: string
+          p_instructions: string
+          p_owner_user_id?: string
+          p_platform: string
+          p_prospect_id: string
+          p_requested_scope: string
+        }
+        Returns: {
+          client_note: string | null
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          granted_at: string | null
+          id: string
+          instructions: string | null
+          organization_id: string
+          owner_user_id: string | null
+          platform: string
+          prospect_id: string
+          requested_scope: string
+          revoked_at: string | null
+          status: Database["public"]["Enums"]["access_grant_status"]
+          updated_at: string
+          verified_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "access_grants"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       request_callback_with_token: {
         Args: {
@@ -3109,6 +4125,36 @@ export type Database = {
           p_token_hash: string
         }
         Returns: undefined
+      }
+      review_onboarding: {
+        Args: {
+          p_correlation_id?: string
+          p_decision: string
+          p_onboarding_id: string
+          p_reasons?: Json
+          p_submission_id: string
+        }
+        Returns: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          current_submission_id: string | null
+          draft_answers: Json
+          id: string
+          info_requests: Json
+          organization_id: string
+          prospect_id: string
+          started_by: string | null
+          status: Database["public"]["Enums"]["onboarding_status"]
+          template_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "onboardings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       review_proposal_version: {
         Args: {
@@ -3223,6 +4269,34 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      save_milestone: {
+        Args: {
+          p_correlation_id?: string
+          p_fields: Json
+          p_milestone_id: string
+          p_workspace_id: string
+        }
+        Returns: {
+          client_visible: boolean
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_at: string | null
+          id: string
+          organization_id: string
+          position: number
+          status: string
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "milestones"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       save_proof_asset: {
         Args: {
           p_correlation_id?: string
@@ -3315,6 +4389,67 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      save_questionnaire_template: {
+        Args: {
+          p_activate?: boolean
+          p_correlation_id?: string
+          p_key: string
+          p_name: string
+          p_organization_id: string
+          p_questions: Json
+        }
+        Returns: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          key: string
+          name: string
+          organization_id: string
+          questions: Json
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "questionnaire_templates"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      save_task: {
+        Args: {
+          p_correlation_id?: string
+          p_fields: Json
+          p_task_id: string
+          p_workspace_id: string
+        }
+        Returns: {
+          client_visible: boolean
+          completed_at: string | null
+          completion_evidence: string | null
+          created_at: string
+          created_by: string | null
+          dependency_id: string | null
+          description: string | null
+          due_at: string | null
+          id: string
+          internal_notes: string | null
+          milestone_id: string | null
+          organization_id: string
+          owner_user_id: string | null
+          priority: Database["public"]["Enums"]["task_priority"]
+          status: Database["public"]["Enums"]["task_status"]
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       send_proposal_version: {
         Args: { p_correlation_id?: string; p_version_id: string }
         Returns: {
@@ -3374,6 +4509,75 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "contract_templates"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_delivery_status: {
+        Args: {
+          p_correlation_id?: string
+          p_reason?: string
+          p_to: Database["public"]["Enums"]["delivery_status"]
+          p_workspace_id: string
+        }
+        Returns: {
+          activated_at: string | null
+          activation_policy_version: number
+          blocked_reasons: string[]
+          client_name: string
+          contract_id: string
+          created_at: string
+          delivery_status: Database["public"]["Enums"]["delivery_status"]
+          eligible_at: string | null
+          id: string
+          kickoff_blockers: string[]
+          kickoff_ready_at: string | null
+          organization_id: string
+          override_active: boolean
+          override_at: string | null
+          override_by: string | null
+          override_reason: string | null
+          prospect_id: string
+          status: Database["public"]["Enums"]["workspace_status"]
+          status_reason: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "workspaces"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_workspace_member: {
+        Args: {
+          p_correlation_id?: string
+          p_role: string
+          p_user_id: string
+          p_workspace_id: string
+        }
+        Returns: undefined
+      }
+      start_onboarding: {
+        Args: { p_correlation_id?: string; p_prospect_id: string }
+        Returns: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          current_submission_id: string | null
+          draft_answers: Json
+          id: string
+          info_requests: Json
+          organization_id: string
+          prospect_id: string
+          started_by: string | null
+          status: Database["public"]["Enums"]["onboarding_status"]
+          template_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "onboardings"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -3546,6 +4750,74 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      transition_workspace: {
+        Args: {
+          p_correlation_id?: string
+          p_reason: string
+          p_to: Database["public"]["Enums"]["workspace_status"]
+          p_workspace_id: string
+        }
+        Returns: {
+          activated_at: string | null
+          activation_policy_version: number
+          blocked_reasons: string[]
+          client_name: string
+          contract_id: string
+          created_at: string
+          delivery_status: Database["public"]["Enums"]["delivery_status"]
+          eligible_at: string | null
+          id: string
+          kickoff_blockers: string[]
+          kickoff_ready_at: string | null
+          organization_id: string
+          override_active: boolean
+          override_at: string | null
+          override_by: string | null
+          override_reason: string | null
+          prospect_id: string
+          status: Database["public"]["Enums"]["workspace_status"]
+          status_reason: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "workspaces"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_access_grant: {
+        Args: {
+          p_correlation_id?: string
+          p_expires_at?: string
+          p_grant_id: string
+          p_status: Database["public"]["Enums"]["access_grant_status"]
+        }
+        Returns: {
+          client_note: string | null
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          granted_at: string | null
+          id: string
+          instructions: string | null
+          organization_id: string
+          owner_user_id: string | null
+          platform: string
+          prospect_id: string
+          requested_scope: string
+          revoked_at: string | null
+          status: Database["public"]["Enums"]["access_grant_status"]
+          updated_at: string
+          verified_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "access_grants"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       update_meeting: {
         Args: {
           p_action: string
@@ -3608,6 +4880,40 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "prospects"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      update_task_status: {
+        Args: {
+          p_correlation_id?: string
+          p_evidence?: string
+          p_status: Database["public"]["Enums"]["task_status"]
+          p_task_id: string
+        }
+        Returns: {
+          client_visible: boolean
+          completed_at: string | null
+          completion_evidence: string | null
+          created_at: string
+          created_by: string | null
+          dependency_id: string | null
+          description: string | null
+          due_at: string | null
+          id: string
+          internal_notes: string | null
+          milestone_id: string | null
+          organization_id: string
+          owner_user_id: string | null
+          priority: Database["public"]["Enums"]["task_priority"]
+          status: Database["public"]["Enums"]["task_status"]
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tasks"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -3684,6 +4990,12 @@ export type Database = {
       }
     }
     Enums: {
+      access_grant_status:
+        | "requested"
+        | "client_confirmed"
+        | "verified"
+        | "declined"
+        | "revoked"
       actor_type: "user" | "client" | "system"
       client_access_status: "active" | "revoked"
       contract_status:
@@ -3696,6 +5008,12 @@ export type Database = {
         | "declined"
         | "voided"
         | "expired"
+      delivery_status:
+        | "not_ready"
+        | "kickoff_ready"
+        | "in_progress"
+        | "paused"
+        | "completed"
       invoice_status:
         | "draft"
         | "issued"
@@ -3714,6 +5032,13 @@ export type Database = {
         | "no_show"
       member_role: "ceo" | "cto_coo" | "delivery" | "sales"
       member_status: "invited" | "active" | "suspended" | "revoked"
+      onboarding_status:
+        | "not_started"
+        | "in_progress"
+        | "submitted"
+        | "needs_information"
+        | "resubmitted"
+        | "approved"
       ops_task_status: "open" | "done" | "cancelled"
       payment_status:
         | "created"
@@ -3759,6 +5084,14 @@ export type Database = {
         | "declined"
         | "disqualified"
         | "archived"
+      task_priority: "low" | "normal" | "high" | "urgent"
+      task_status: "todo" | "in_progress" | "blocked" | "done" | "cancelled"
+      workspace_status:
+        | "blocked"
+        | "eligible"
+        | "active"
+        | "suspended"
+        | "closed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3886,6 +5219,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      access_grant_status: [
+        "requested",
+        "client_confirmed",
+        "verified",
+        "declined",
+        "revoked",
+      ],
       actor_type: ["user", "client", "system"],
       client_access_status: ["active", "revoked"],
       contract_status: [
@@ -3898,6 +5238,13 @@ export const Constants = {
         "declined",
         "voided",
         "expired",
+      ],
+      delivery_status: [
+        "not_ready",
+        "kickoff_ready",
+        "in_progress",
+        "paused",
+        "completed",
       ],
       invoice_status: [
         "draft",
@@ -3919,6 +5266,14 @@ export const Constants = {
       ],
       member_role: ["ceo", "cto_coo", "delivery", "sales"],
       member_status: ["invited", "active", "suspended", "revoked"],
+      onboarding_status: [
+        "not_started",
+        "in_progress",
+        "submitted",
+        "needs_information",
+        "resubmitted",
+        "approved",
+      ],
       ops_task_status: ["open", "done", "cancelled"],
       payment_status: [
         "created",
@@ -3968,6 +5323,15 @@ export const Constants = {
         "declined",
         "disqualified",
         "archived",
+      ],
+      task_priority: ["low", "normal", "high", "urgent"],
+      task_status: ["todo", "in_progress", "blocked", "done", "cancelled"],
+      workspace_status: [
+        "blocked",
+        "eligible",
+        "active",
+        "suspended",
+        "closed",
       ],
     },
   },

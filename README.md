@@ -2,11 +2,13 @@
 
 This is the client conversion portal and internal operations dashboard for Atmors. The source of truth for scope and behaviour is [`Atmors_ClientOS_Final_PRD_v1.0.pdf`](Atmors_ClientOS_Final_PRD_v1.0.pdf).
 
-**Status:** Phase 3 complete. It includes everything from Phases 1 and 2 (auth, roles, RLS, audit, CRM, invitations, versioned proposals, proof library, client portal) plus:
+**Status:** Phase 4 complete. It includes everything from Phases 1 and 2 (auth, roles, RLS, audit, CRM, invitations, versioned proposals, proof library, client portal) plus:
 - shared booking with database-level conflict prevention, host routing, timezones and a callback fallback
 - agreements generated from the exact accepted proposal version, with an e-signature adapter (sandbox until a vendor is approved)
 - per-agreement payment schedules, invoices, payments through a provider adapter (Razorpay or sandbox), verified webhooks, refunds, disputes and manual reconciliation
 - the activation evaluator, internal tasks and provider exception queues
+- onboarding questionnaires with conditional follow-ups, immutable submission revisions and a review loop
+- private client file uploads, access-grant tracking, and client workspaces with milestones, delivery tasks and assignment-based access
 
 ## Stack
 
@@ -54,7 +56,7 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, TypeScript, Tailwind v4 with 
 src/
   app/                  routes: /login, /auth/*, /dashboard (internal), /i/[token] (invitation), /portal (client), /api/*
   components/           shared UI (shadcn in components/ui)
-  modules/<domain>/     domain logic per PRD module (crm, proposals, proof, scheduling, contracts, billing)
+  modules/<domain>/     domain logic per PRD module (crm, proposals, proof, scheduling, contracts, billing, onboarding)
   server/
     auth/               session (verified JWT)
     authorization/      permissions, member context

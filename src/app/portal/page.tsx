@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { clientInvoiceListSchema } from "@/modules/billing/schema";
 import { clientContractListSchema } from "@/modules/contracts/schema";
+import { clientOnboardingSchema, clientWorkspaceSchema } from "@/modules/onboarding/schema";
 import { formatMoney } from "@/modules/proposals/money";
 import { PURPOSE_LABELS, clientMeetingSchema } from "@/modules/scheduling/schema";
 import { getSessionUser } from "@/server/auth/session";
@@ -47,13 +48,15 @@ export default async function PortalHomePage(props: PageProps<"/portal">) {
   const inviteError = typeof params.invite_error === "string" ? params.invite_error : null;
 
   const supabase = await createSupabaseServerClient();
-  const [proposalsResult, meetingsResult, contractsResult, invoicesResult] = await Promise.all([
+  const [proposalsResult, meetingsResult, contractsResult, invoicesResult, onboardingResult, workspaceResult] = await Promise.all([
     supabase.rpc("client_proposals"),
     supabase.rpc("client_meetings"),
     supabase.rpc("client_contracts"),
     supabase.rpc("client_invoices"),
+    supabase.rpc("client_onboarding"),
+    supabase.rpc("client_workspace"),
   ]);
-  for (const result of [proposalsResult, meetingsResult, contractsResult, invoicesResult]) {
+  for (const result of [proposalsResult, meetingsResult, contractsResult, invoicesResult, onboardingResult, workspaceResult]) {
     if (result.error) throw fromPostgrestError(result.error);
   }
   const proposals = listSchema.parse(proposalsResult.data ?? []);
@@ -61,6 +64,8 @@ export default async function PortalHomePage(props: PageProps<"/portal">) {
   const contracts = clientContractListSchema.parse(contractsResult.data ?? []);
   const invoices = clientInvoiceListSchema.parse(invoicesResult.data ?? []);
   const upcoming = meetings.filter((meeting) => meeting.can_change);
+  const onboarding = onboardingResult.data ? clientOnboardingSchema.parse(onboardingResult.data) : null;
+  const workspace = workspaceResult.data ? clientWorkspaceSchema.parse(workspaceResult.data) : null;
   const hasAccess = proposals.length > 0 || contracts.length > 0;
 
   return (
@@ -99,6 +104,42 @@ export default async function PortalHomePage(props: PageProps<"/portal">) {
             </li>
           ))}
         </ul>
+      ) : null}
+
+      {onboarding || workspace ? (
+        <section aria-labelledby="getting-started" className="grid gap-3 sm:grid-cols-2">
+          <h2 id="getting-started" className="sr-only">
+            Getting started
+          </h2>
+          {onboarding ? (
+            <Link href="/portal/onboarding" className="flex flex-col gap-2 rounded-lg border bg-card p-4 hover:bg-muted/50">
+              <span className="flex items-center justify-between gap-2">
+                <span className="font-medium">Onboarding</span>
+                <StatusBadge status={onboarding.status} />
+              </span>
+              <span className="text-sm text-muted-foreground">
+                {onboarding.status === "needs_information"
+                  ? "Atmors needs a little more information."
+                  : onboarding.status === "approved"
+                    ? "Approved. Thank you!"
+                    : ["submitted", "resubmitted"].includes(onboarding.status)
+                      ? "With Atmors for review."
+                      : "Tell us about your business and share your files."}
+              </span>
+            </Link>
+          ) : null}
+          {workspace ? (
+            <Link href="/portal/workspace" className="flex flex-col gap-2 rounded-lg border bg-card p-4 hover:bg-muted/50">
+              <span className="flex items-center justify-between gap-2">
+                <span className="font-medium">Workspace</span>
+                <StatusBadge status={workspace.status === "setting_up" ? "pending" : workspace.status} />
+              </span>
+              <span className="text-sm text-muted-foreground">
+                {workspace.status === "active" ? "Milestones, shared tasks and updates." : "Opens once the agreed start conditions are met."}
+              </span>
+            </Link>
+          ) : null}
+        </section>
       ) : null}
 
       {contracts.length > 0 ? (

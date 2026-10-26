@@ -56,3 +56,15 @@ export async function parseJsonBody<T extends z.ZodType>(request: Request, schem
   if (!result.success) throw fromZodError(result.error);
   return result.data;
 }
+
+/**
+ * CSRF guard for cookie-authenticated, state-changing routes (server actions
+ * have this built in; route handlers do not). Browsers always send Origin on
+ * cross-site POSTs, so a missing or foreign Origin is refused.
+ */
+export function assertSameOrigin(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  if (!origin || origin !== request.nextUrl.origin) {
+    throw new AppError("FORBIDDEN", { detail: `cross-origin request from ${origin ?? "unknown"}` });
+  }
+}

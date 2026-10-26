@@ -20,8 +20,12 @@ test.describe("agreement and payment journey", () => {
   const PASSWORD = process.env.TEST_USER_PASSWORD ?? "clientos-rls-fixture-Pa55!";
   const SALES = "p3-sales+clientos@example.com";
   const CEO = "p3-ceo+clientos@example.com";
-  const CLIENT = "p3-client-a+clientos@example.com";
-  const title = `Agreement journey ${randomUUID().slice(0, 8)}`;
+  const CTO = "p3-cto+clientos@example.com";
+  const DELIVERY = "p3-delivery+clientos@example.com";
+  const runId = randomUUID().slice(0, 8);
+  // A fresh client per run: onboarding and the workspace are one per client.
+  const CLIENT = `p3-journey-${runId}+clientos@example.com`;
+  const title = `Agreement journey ${runId}`;
   let proposalId = "";
   let contractUrl = "";
   let bookingToken = "";
@@ -43,9 +47,20 @@ test.describe("agreement and payment journey", () => {
 
   test.beforeAll(async () => {
     // An accepted proposal for the fixture client, set up through the API.
+    const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SECRET_KEY!, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const created = await admin.auth.admin.createUser({ email: CLIENT, password: PASSWORD, email_confirm: true });
+    if (created.error) throw created.error;
     const sales = await as(SALES);
     const client = await as(CLIENT);
-    const { data: prospect } = await sales.from("prospects").select("id").eq("normalized_email", CLIENT).single();
+    const { data: org } = await sales.from("organizations").select("id").eq("slug", "p3-fixture").single();
+    const prospect = await rpc(sales, "create_prospect", {
+      p_organization_id: org!.id,
+      p_owner_user_id: (await sales.auth.getUser()).data.user!.id,
+      p_name: `Journey ${runId}`,
+      p_email: CLIENT,
+    });
     const proposal = await rpc(sales, "create_proposal", { p_prospect_id: prospect!.id, p_title: title, p_currency: "INR" });
     proposalId = proposal.id;
     const versionId = proposal.current_version_id;
@@ -84,12 +99,12 @@ test.describe("agreement and payment journey", () => {
     await signInContext(context, CEO, baseURL!);
     const page = await context.newPage();
     await page.goto(`/dashboard/proposals/${proposalId}`);
-    await page.getByLabel("Client's registered legal name").fill("Asha Ventures Private Limited");
+    await page.getByLabel("Client's registered legal name").fill(`Asha Ventures ${runId} Private Limited`);
     await page.getByLabel("Registered address").fill("12 MG Road, Bengaluru 560001");
     await page.getByRole("button", { name: "Generate agreement draft" }).click();
     await expect(page).toHaveURL(/\/dashboard\/contracts\/[0-9a-f-]{36}$/);
     contractUrl = page.url();
-    await expect(page.getByText("Asha Ventures Private Limited").first()).toBeVisible();
+    await expect(page.getByText(`Asha Ventures ${runId} Private Limited`).first()).toBeVisible();
     await expect(page.getByText("has not been approved by a qualified Indian legal professional")).toBeVisible();
 
     page.once("dialog", (dialog) => dialog.accept());
@@ -106,7 +121,7 @@ test.describe("agreement and payment journey", () => {
     const page = await client.newPage();
     await page.goto("/portal");
     await page.getByRole("link", { name: new RegExp(`${title}.*Ready for your signature`) }).click();
-    await expect(page.getByText("Asha Ventures Private Limited").first()).toBeVisible();
+    await expect(page.getByText(`Asha Ventures ${runId} Private Limited`).first()).toBeVisible();
     await page.getByRole("checkbox").check();
     page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: "Sign agreement" }).click();
@@ -132,7 +147,7 @@ test.describe("agreement and payment journey", () => {
     await signInContext(context, CLIENT, baseURL!);
     const page = await context.newPage();
     await page.goto("/portal");
-    await page.getByRole("link", { name: /Deposit.*₹590\.00 due/ }).first().click();
+    await page.getByRole("link", { name: /Deposit.*₹590\.00 due/ }).click();
     await page.getByRole("button", { name: "Pay ₹590.00" }).click();
     await expect(page).toHaveURL(/\/portal\/pay\/sandbox\//);
 
@@ -163,5 +178,74 @@ test.describe("agreement and payment journey", () => {
     await page.getByRole("button", { name: "Book this time" }).click();
     await expect(page.getByText("You're booked")).toBeVisible();
     await context.close();
+  });
+
+  test("the client completes onboarding with a file; operations review it and the workspace opens", async ({ browser, baseURL }) => {
+    test.skip(!contractUrl, "depends on the previous tests");
+    const client = await browser.newContext();
+    await signInContext(client, CLIENT, baseURL!);
+    const page = await client.newPage();
+    await page.goto("/portal/onboarding");
+    await page.getByLabel("Business or brand name").fill("Asha Ventures");
+    await page.getByLabel("What do you sell, and to whom?").fill("Analytics for retailers");
+    await page.getByLabel(/Who is your ideal customer/).fill("Merchandising heads");
+    await page.getByLabel(/first 90 days/).fill("Three demos a month");
+    await page.getByLabel("LinkedIn personal profile").check();
+    await page.getByRole("group", { name: /brand or tone-of-voice/ }).getByLabel("Yes").check();
+    // The conditional follow-up appears only after "Yes".
+    await expect(page.getByLabel(/Please upload them below/)).toBeVisible();
+    await page.getByLabel(/Describe your voice/).fill("Direct and warm");
+    await page.getByLabel(/Who approves content/).fill("approver@asha.test");
+    await page.getByRole("button", { name: "Save and finish later" }).click();
+    await expect(page.getByText("Progress saved.")).toBeVisible();
+
+    await page.getByLabel(/Add a file/).setInputFiles({ name: "brand-guide.txt", mimeType: "text/plain", buffer: Buffer.from("Tone: direct, warm.") });
+    await page.getByRole("button", { name: "Upload" }).click();
+    await expect(page.getByRole("link", { name: "brand-guide.txt" })).toBeVisible();
+    // A disguised file is refused.
+    await page.getByLabel(/Add a file/).setInputFiles({ name: "logo.png", mimeType: "image/png", buffer: Buffer.from("%PDF-1.7 not a png") });
+    await page.getByRole("button", { name: "Upload" }).click();
+    await expect(page.getByText("The file's contents don't match its type.")).toBeVisible();
+
+    await page.getByRole("button", { name: "Submit for review" }).click();
+    // The page switches to the read-only view of the submitted answers.
+    await expect(page.getByText("Thanks! Atmors is reviewing your answers.")).toBeVisible();
+    await client.close();
+
+    const cto = await browser.newContext();
+    await signInContext(cto, CTO, baseURL!);
+    const ctoPage = await cto.newPage();
+    await ctoPage.goto("/dashboard/onboarding");
+    await ctoPage.getByRole("link", { name: `Journey ${runId}` }).click();
+    await expect(ctoPage.getByText("Analytics for retailers")).toBeVisible();
+    await ctoPage.getByRole("button", { name: "Record decision" }).click();
+    await expect(ctoPage.getByText("Approved").first()).toBeVisible();
+    await ctoPage.getByRole("link", { name: "workspace", exact: true }).click();
+    await expect(ctoPage.getByText("Active since")).toBeVisible();
+    await ctoPage.getByLabel("Team member").selectOption({ label: "P3 delivery" });
+    await ctoPage.getByLabel("Role").selectOption("lead");
+    await ctoPage.getByRole("button", { name: "Add to team" }).click();
+    await expect(ctoPage.getByText("Kickoff ready").first()).toBeVisible();
+    await ctoPage.locator("#ms-title").fill("Content strategy approved");
+    await ctoPage.getByRole("button", { name: "Add milestone" }).click();
+    await expect(ctoPage.getByText("Content strategy approved").first()).toBeVisible();
+    await cto.close();
+
+    const delivery = await browser.newContext();
+    await signInContext(delivery, DELIVERY, baseURL!);
+    const deliveryPage = await delivery.newPage();
+    await deliveryPage.goto("/dashboard/workspaces");
+    await expect(deliveryPage.getByRole("link", { name: `Asha Ventures ${runId} Private Limited` }).or(deliveryPage.getByRole("link", { name: `Journey ${runId}` }))).toBeVisible();
+    await deliveryPage.goto("/dashboard/billing");
+    await expect(deliveryPage.getByText("You don't have access to this page")).toBeVisible();
+    await delivery.close();
+
+    const back = await browser.newContext();
+    await signInContext(back, CLIENT, baseURL!);
+    const workspacePage = await back.newPage();
+    await workspacePage.goto("/portal/workspace");
+    await expect(workspacePage.getByText("Your workspace is active.", { exact: true })).toBeVisible();
+    await expect(workspacePage.getByText("Content strategy approved")).toBeVisible();
+    await back.close();
   });
 });

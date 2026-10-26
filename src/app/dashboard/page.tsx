@@ -17,12 +17,6 @@ import { memberPageAccess } from "./member-page";
 
 export const metadata: Metadata = { title: "Work queue" };
 
-// Queues from PRD §5.9 that arrive with later modules.
-const UPCOMING_QUEUES = [
-  { title: "Onboarding blockers", phase: "Phase 4" },
-  { title: "Overdue delivery tasks", phase: "Phase 4" },
-];
-
 const dateTime = new Intl.DateTimeFormat("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 
 function todayIstBounds(): { start: string; end: string } {
@@ -86,7 +80,7 @@ export default async function WorkQueuePage() {
   const finance = can(context, "finance.read");
 
   // Every query is RLS-scoped to what this member may see.
-  const [followUps, openProposals, approvals, accepted, meetings, signatures, invoices, failedPayments, tasks] = await Promise.all([
+  const [followUps, openProposals, approvals, accepted, meetings, signatures, invoices, failedPayments, tasks, onboardings, kickoff, overdueTasks] = await Promise.all([
     supabase
       .from("prospects")
       .select("id, name, company, status, next_action_at")
@@ -162,8 +156,31 @@ export default async function WorkQueuePage() {
       .eq("status", "open")
       .order("due_at")
       .limit(50),
+    can(context, "onboarding.manage")
+      ? supabase
+          .from("onboardings")
+          .select("id, status, updated_at, prospects(name, company)")
+          .eq("organization_id", org)
+          .in("status", ["submitted", "resubmitted", "needs_information"])
+          .order("updated_at")
+          .limit(25)
+      : none,
+    supabase
+      .from("workspaces")
+      .select("id, client_name, delivery_status, status, blocked_reasons")
+      .eq("organization_id", org)
+      .or("delivery_status.eq.kickoff_ready,status.eq.blocked")
+      .limit(25),
+    supabase
+      .from("tasks")
+      .select("id, title, due_at, workspace_id, workspaces(client_name)")
+      .eq("organization_id", org)
+      .lt("due_at", new Date().toISOString())
+      .not("status", "in", "(done,cancelled)")
+      .order("due_at")
+      .limit(25),
   ]);
-  for (const result of [followUps, openProposals, approvals, accepted, meetings, signatures, invoices, failedPayments, tasks]) {
+  for (const result of [followUps, openProposals, approvals, accepted, meetings, signatures, invoices, failedPayments, tasks, onboardings, kickoff, overdueTasks]) {
     if (result.error) throw fromPostgrestError(result.error);
   }
 
@@ -359,20 +376,54 @@ export default async function WorkQueuePage() {
             ))}
           </Queue>
         ) : null}
-      </div>
+        {can(context, "onboarding.manage") ? (
+          <Queue
+            title="Onboarding blockers"
+            description="Submissions to review, and clients we asked for more information."
+            empty="No onboarding is waiting."
+            count={onboardings.data?.length ?? 0}
+          >
+            {(onboardings.data ?? []).map((row) => (
+              <li key={row.id} className="py-2">
+                <Link href={`/dashboard/onboarding/${row.id}`} className="flex flex-wrap items-center justify-between gap-2 hover:underline">
+                  <span>{row.prospects?.company ?? row.prospects?.name}</span>
+                  <StatusBadge status={row.status} />
+                </Link>
+              </li>
+            ))}
+          </Queue>
+        ) : null}
 
-      <section aria-labelledby="upcoming" className="space-y-2">
-        <h2 id="upcoming" className="text-sm font-medium text-muted-foreground">
-          Coming with later phases
-        </h2>
-        <ul className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-          {UPCOMING_QUEUES.map((queue) => (
-            <li key={queue.title} className="rounded-full border border-dashed px-3 py-1">
-              {queue.title} · {queue.phase}
+        <Queue
+          title="Kickoff-ready and blocked workspaces"
+          description="Ready to start, or waiting on activation conditions."
+          empty="Nothing waiting."
+          count={kickoff.data?.length ?? 0}
+        >
+          {(kickoff.data ?? []).map((row) => (
+            <li key={row.id} className="py-2">
+              <Link href={`/dashboard/workspaces/${row.id}`} className="flex flex-wrap items-center justify-between gap-2 hover:underline">
+                <span>{row.client_name}</span>
+                <StatusBadge status={row.delivery_status === "kickoff_ready" ? "kickoff_ready" : row.status} />
+              </Link>
             </li>
           ))}
-        </ul>
-      </section>
+        </Queue>
+
+        <Queue title="Overdue delivery tasks" description="Past their due date and not done." empty="Nothing overdue." count={overdueTasks.data?.length ?? 0}>
+          {(overdueTasks.data ?? []).map((task) => (
+            <li key={task.id} className="py-2">
+              <Link href={`/dashboard/workspaces/${task.workspace_id}`} className="flex flex-wrap items-center justify-between gap-2 hover:underline">
+                <span>
+                  {task.title}
+                  <span className="text-muted-foreground"> · {task.workspaces?.client_name}</span>
+                </span>
+                <span className="text-sm text-destructive">{dateTime.format(new Date(task.due_at!))}</span>
+              </Link>
+            </li>
+          ))}
+        </Queue>
+      </div>
     </div>
   );
 }
