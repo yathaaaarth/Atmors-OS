@@ -4,8 +4,8 @@ The pilot runs entirely on free plans (decision D-028). What each service gives,
 
 | Piece | Service (free plan) | Limits that matter | How we cover them |
 |---|---|---|---|
-| App | Vercel Hobby, region `bom1` (Mumbai) | Hobby is for non-commercial use; crons only daily | Scheduler moved to GitHub Actions; move to Pro when the business uses it commercially at scale |
-| Database, auth, files | Supabase Free, `ap-south-1` | 2 projects; 500 MB database; 1 GB files; pauses after 7 days idle; **no backups** | Dev project = development + testing; a second project = production. The 5-minute scheduler keeps production awake. Encrypted backups every 6 hours (database and files) through GitHub Actions |
+| App | Vercel Hobby, region `sin1` (Singapore, next to the production database) | Hobby is for non-commercial use; crons only daily | Scheduler moved to GitHub Actions; move to Pro when the business uses it commercially at scale |
+| Database, auth, files | Supabase Free: production in `ap-southeast-1` (Singapore), dev in `ap-south-1` (Mumbai) | 2 projects; 500 MB database; 1 GB files; pauses after 7 days idle; **no backups** | Dev project = development + testing; a second project = production. The 5-minute scheduler keeps production awake. Encrypted backups every 6 hours (database and files) through GitHub Actions |
 | Scheduler | GitHub Actions (free for public repos) | Scheduled runs can lag a few minutes; disabled after 60 days without repo activity | Every job is idempotent; a late run only delays emails |
 | Email | Resend Free | 3,000 per month, 100 per day | Enough for a pilot |
 | Payments | Razorpay (about 2% domestic, about 3% international cards), PayPal (about 4.4% plus conversion), bank transfer (free) | Razorpay and PayPal need business accounts; international cards must be enabled on Razorpay | Clients choose; wire instructions are always shown when set; payments recorded manually for transfers (D-030) |
@@ -14,7 +14,7 @@ The pilot runs entirely on free plans (decision D-028). What each service gives,
 
 ## 1. Production database (Supabase)
 
-1. Create a new project: name `atmors-prod`, region `ap-south-1 (Mumbai)`, a strong database password (keep it in a password manager).
+1. Create a new project: name `atmors-prod`, region `ap-southeast-1 (Singapore)` (the current production project) or `ap-south-1 (Mumbai)`; keep `vercel.json` in the same region. Use a strong database password (keep it in a password manager).
 2. Apply the schema from this repository:
    ```sh
    npx supabase link --project-ref <prod-ref>

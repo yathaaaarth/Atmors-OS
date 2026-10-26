@@ -166,7 +166,7 @@ These are the technical decisions made during implementation. Product decisions 
 ## D-028: Free-tier hosting for the pilot
 
 - **Date:** 2026-10-29 · **Status:** accepted
-- **Decision:** Vercel Hobby (region `bom1`, next to Supabase `ap-south-1`), Supabase Free (the existing project for development and tests, a second one for production), Resend Free, and GitHub Actions for the scheduler (`scheduled-jobs.yml`, every 5 minutes plus daily) and for backups (`backup.yml`: `pg_dump` every 6 hours plus the uploaded files, encrypted with AES-256 before upload because the repository is public, kept 30 days). Vercel Cron is not used because Hobby only allows daily jobs.
+- **Decision:** Vercel Hobby (region `sin1`, next to the production Supabase project in `ap-southeast-1`, Singapore; the dev project is in `ap-south-1`, Mumbai), Supabase Free (the existing project for development and tests, a second one for production), Resend Free, and GitHub Actions for the scheduler (`scheduled-jobs.yml`, every 5 minutes plus daily) and for backups (`backup.yml`: `pg_dump` every 6 hours plus the uploaded files, encrypted with AES-256 before upload because the repository is public, kept 30 days). Vercel Cron is not used because Hobby only allows daily jobs.
 - **Consequences:** No separate staging project (two free projects only); releases are rehearsed on Vercel preview deployments against the dev project. RPO is 6 hours. Vercel's Hobby terms are for non-commercial use, so move to Pro when usage becomes commercial. The upgrade path changes configuration, not code (docs/deployment.md).
 
 
