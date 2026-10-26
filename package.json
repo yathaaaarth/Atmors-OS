@@ -12,6 +12,7 @@
     "test:watch": "vitest --project unit --project db",
     "test:security": "vitest run --project security",
     "test:e2e": "playwright test",
+    "ai:eval": "vitest run --project ai-eval",
     "db:link": "supabase link",
     "db:push": "supabase db push --linked",
     "db:types": "supabase gen types typescript --linked --schema public > src/server/supabase/database.types.ts",
@@ -19,6 +20,7 @@
     "check": "npm run lint && npm run typecheck && npm run test"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0",
     "@hookform/resolvers": "^5.9.2",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",

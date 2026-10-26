@@ -33,6 +33,10 @@ test.describe("proposal journey", () => {
       ["/dashboard/contracts", "Agreements"],
       ["/dashboard/contracts/templates", "Agreement templates"],
       ["/dashboard/billing", "Billing"],
+      ["/dashboard/onboarding", "Onboarding"],
+      ["/dashboard/workspaces", "Workspaces"],
+      ["/dashboard/knowledge", "Approved knowledge"],
+      ["/dashboard/ai", "AI usage"],
       ["/dashboard/team", "Team"],
       ["/dashboard/audit", "Audit log"],
     ] as const) {
@@ -106,6 +110,14 @@ test.describe("proposal journey", () => {
     await expect(page.getByText("₹1,77,000.00").first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Email me a secure link" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Accept proposal" })).toHaveCount(0);
+
+    // The assistant answers only from this proposal, and hands discount questions to a person.
+    await page.getByRole("button", { name: "What's included?" }).click();
+    await expect(page.getByText(/^From: /).first()).toBeVisible();
+    await page.getByLabel("Your question").fill("Can I get a discount if I sign today?");
+    await page.getByRole("button", { name: "Ask", exact: true }).click();
+    await page.getByRole("button", { name: "Yes, pass this to my Atmors contact" }).click();
+    await expect(page.getByText("Passed to your Atmors contact.")).toBeVisible();
 
     await page.getByLabel("Ask a question").fill("Can we start next month?");
     await page.getByRole("button", { name: "Send question" }).click();

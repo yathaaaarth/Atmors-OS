@@ -2,13 +2,14 @@
 
 This is the client conversion portal and internal operations dashboard for Atmors. The source of truth for scope and behaviour is [`Atmors_ClientOS_Final_PRD_v1.0.pdf`](Atmors_ClientOS_Final_PRD_v1.0.pdf).
 
-**Status:** Phase 4 complete. It includes everything from Phases 1 and 2 (auth, roles, RLS, audit, CRM, invitations, versioned proposals, proof library, client portal) plus:
+**Status:** Phase 5 complete. It includes everything from Phases 1 and 2 (auth, roles, RLS, audit, CRM, invitations, versioned proposals, proof library, client portal) plus:
 - shared booking with database-level conflict prevention, host routing, timezones and a callback fallback
 - agreements generated from the exact accepted proposal version, with an e-signature adapter (sandbox until a vendor is approved)
 - per-agreement payment schedules, invoices, payments through a provider adapter (Razorpay or sandbox), verified webhooks, refunds, disputes and manual reconciliation
 - the activation evaluator, internal tasks and provider exception queues
 - onboarding questionnaires with conditional follow-ups, immutable submission revisions and a review loop
 - private client file uploads, access-grant tracking, and client workspaces with milestones, delivery tasks and assignment-based access
+- Atmors AI behind a provider interface: a grounded proposal assistant with human handoff, a read-only staff copilot, an onboarding strategist, approved knowledge, usage budgets, logging and an evaluation set
 
 ## Stack
 
@@ -48,6 +49,7 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, TypeScript, Tailwind v4 with 
 | `npm run test:e2e` | Playwright smoke tests at desktop and mobile widths, plus the full proposal journey when dev keys are present. Run `npm run build` first, and run `npm run test:security` once beforehand to create the fixture users. |
 | `npm run db:push` | Apply new migrations to the linked project |
 | `npm run db:types` | Regenerate `src/server/supabase/database.types.ts` from the linked project |
+| `npm run ai:eval` | Grade the AI evaluation set against the configured provider and write `docs/ai/evaluation.md` (costs money with a paid provider) |
 | `npm run bootstrap` | Create the organization and grant or update a team member's role (`ceo`, `cto_coo`, `sales`, `delivery`; audited) |
 
 ## Layout

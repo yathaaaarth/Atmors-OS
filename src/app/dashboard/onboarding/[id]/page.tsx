@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AccessDenied } from "@/components/access-denied";
+import { UseQuestionsButton } from "@/components/ai/use-questions-button";
 import { ActionForm } from "@/components/action-form";
 import { StatusBadge } from "@/components/status-badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +17,7 @@ import { fromPostgrestError } from "@/server/errors";
 import { createSupabaseServerClient } from "@/server/supabase/server";
 
 import { memberPageAccess } from "../../member-page";
-import { requestAccessGrant, reviewOnboarding, updateAccessGrant } from "../actions";
+import { requestAccessGrant, reviewOnboarding, runAiReview, setAiNoteStatus, updateAccessGrant } from "../actions";
 
 export const metadata: Metadata = { title: "Onboarding review" };
 
@@ -39,15 +40,16 @@ export default async function OnboardingReviewPage(props: PageProps<"/dashboard/
   if (error) throw fromPostgrestError(error);
   if (!onboarding) notFound();
 
-  const [submissions, reviews, assets, grants, prospect, workspace] = await Promise.all([
+  const [submissions, reviews, assets, grants, prospect, workspace, notes] = await Promise.all([
     supabase.from("onboarding_submissions").select("id, revision, submitted_at").eq("onboarding_id", id).order("revision", { ascending: false }),
     supabase.from("onboarding_reviews").select("*").eq("onboarding_id", id).order("created_at", { ascending: false }),
     supabase.from("client_assets").select("*").eq("prospect_id", onboarding.prospect_id).eq("status", "ready").order("created_at"),
     supabase.from("access_grants").select("*").eq("prospect_id", onboarding.prospect_id).order("created_at"),
     supabase.from("prospects").select("id, name, company").eq("id", onboarding.prospect_id).maybeSingle(),
     supabase.from("workspaces").select("id, client_name").eq("prospect_id", onboarding.prospect_id).maybeSingle(),
+    supabase.from("onboarding_ai_notes").select("*").eq("onboarding_id", id).eq("status", "draft").order("created_at", { ascending: false }).limit(1),
   ]);
-  for (const result of [submissions, reviews, assets, grants, prospect, workspace]) {
+  for (const result of [submissions, reviews, assets, grants, prospect, workspace, notes]) {
     if (result.error) throw fromPostgrestError(result.error);
   }
   const revisions = submissions.data ?? [];
@@ -114,6 +116,79 @@ export default async function OnboardingReviewPage(props: PageProps<"/dashboard/
                 <Label htmlFor="requests">What&apos;s missing (one item per line; start with a question key such as &quot;goals:&quot; to link it)</Label>
                 <Textarea id="requests" name="requests" rows={4} />
               </div>
+            </ActionForm>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {canReview && latest ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>AI review assistant</CardTitle>
+            <CardDescription>
+              Flags vague or missing answers and drafts questions for you. It is a suggestion stored separately; it never changes
+              what the client submitted.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm">
+            {(() => {
+              const note = notes.data?.[0];
+              if (!note) return null;
+              const content = note.content as {
+                flags: { question_key: string; issue: string; note: string }[];
+                clarifying_questions: { question_key: string | null; question: string }[];
+                brief: { business: string; audience: string; goals: string; voice: string };
+                missing_assets: string[];
+              };
+              const requestText = content.clarifying_questions
+                .map((item) => (item.question_key ? `${item.question_key}: ${item.question}` : item.question))
+                .join("\n");
+              return (
+                <div className="space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    Draft from {note.provider} ({note.model}), {dateTime.format(new Date(note.created_at))}. AI interpretation, not client-provided.
+                  </p>
+                  {content.flags.length ? (
+                    <ul className="list-disc pl-5">
+                      {content.flags.map((flag, index) => (
+                        <li key={index}>
+                          <span className="font-medium">{flag.question_key}</span> ({flag.issue}): {flag.note}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No vague or missing answers flagged.</p>
+                  )}
+                  {content.clarifying_questions.length ? (
+                    <div className="space-y-2">
+                      <p className="font-medium">Draft questions</p>
+                      <pre className="whitespace-pre-wrap rounded bg-muted p-2 font-sans text-xs">{requestText}</pre>
+                      {awaiting ? <UseQuestionsButton text={requestText} textareaId="requests" radioValue="needs_information" /> : null}
+                    </div>
+                  ) : null}
+                  <dl className="grid gap-2 sm:grid-cols-2">
+                    {(["business", "audience", "goals", "voice"] as const).map((key) => (
+                      <div key={key}>
+                        <dt className="text-xs font-medium uppercase text-muted-foreground">{key} (draft brief)</dt>
+                        <dd>{content.brief[key] || "—"}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  {content.missing_assets.length ? <p>Possibly missing: {content.missing_assets.join(", ")}</p> : null}
+                  <div className="flex gap-2">
+                    {(["used", "discarded"] as const).map((status) => (
+                      <ActionForm key={status} action={setAiNoteStatus} submitLabel={status === "used" ? "Mark as used" : "Discard"} variant="outline">
+                        <input type="hidden" name="onboardingId" value={onboarding.id} />
+                        <input type="hidden" name="noteId" value={note.id} />
+                        <input type="hidden" name="status" value={status} />
+                      </ActionForm>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+            <ActionForm action={runAiReview} submitLabel={notes.data?.length ? "Run again" : "Review with AI"} pendingLabel="Reviewing…" variant="outline">
+              <input type="hidden" name="onboardingId" value={onboarding.id} />
             </ActionForm>
           </CardContent>
         </Card>

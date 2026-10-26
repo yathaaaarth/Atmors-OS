@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AccessDenied } from "@/components/access-denied";
+import { AssistantChat } from "@/components/ai/assistant-chat";
 import { ActionForm } from "@/components/action-form";
 import { StatusBadge, statusLabel } from "@/components/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +22,7 @@ import { memberPageAccess } from "../../member-page";
 import { createProposal, logOutreach, transitionProspect } from "../actions";
 import { ProspectForm } from "../prospect-form";
 
+import { askCopilotAction, confirmCopilotAction } from "./copilot-actions";
 import { InvitationsPanel } from "./invitations-panel";
 
 export const metadata: Metadata = { title: "Prospect" };
@@ -291,6 +293,17 @@ export default async function ProspectPage(props: PageProps<"/dashboard/prospect
           ) : null}
         </div>
       </div>
+
+      {can(context, "ai.copilot") ? (
+        <AssistantChat
+          title="Copilot"
+          notice="Read-only. It sees only the records you can see, and suggests tasks or drafts that you confirm or send yourself."
+          suggestions={["Summarize where this client stands", "What is blocking progress?", "Draft a follow-up message"]}
+          hiddenFields={{ prospectId: prospect.id }}
+          ask={askCopilotAction}
+          confirm={confirmCopilotAction}
+        />
+      ) : null}
     </div>
   );
 }

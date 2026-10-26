@@ -155,6 +155,198 @@ export type Database = {
           },
         ]
       }
+      ai_conversations: {
+        Row: {
+          actor_key: string
+          actor_type: Database["public"]["Enums"]["actor_type"]
+          actor_user_id: string | null
+          assistant: string
+          created_at: string
+          id: string
+          organization_id: string
+          prospect_id: string | null
+          subject_id: string | null
+          subject_type: string | null
+        }
+        Insert: {
+          actor_key: string
+          actor_type: Database["public"]["Enums"]["actor_type"]
+          actor_user_id?: string | null
+          assistant: string
+          created_at?: string
+          id?: string
+          organization_id: string
+          prospect_id?: string | null
+          subject_id?: string | null
+          subject_type?: string | null
+        }
+        Update: {
+          actor_key?: string
+          actor_type?: Database["public"]["Enums"]["actor_type"]
+          actor_user_id?: string | null
+          assistant?: string
+          created_at?: string
+          id?: string
+          organization_id?: string
+          prospect_id?: string | null
+          subject_id?: string | null
+          subject_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_conversations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_conversations_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          correlation_id: string
+          created_at: string
+          error_category: string | null
+          finish_reason: string | null
+          grounded: boolean | null
+          id: string
+          input_tokens: number | null
+          latency_ms: number | null
+          model: string | null
+          organization_id: string
+          output_tokens: number | null
+          policy_flags: string[]
+          provider: string | null
+          role: string
+          sources: Json
+          validation_status: string | null
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          correlation_id: string
+          created_at?: string
+          error_category?: string | null
+          finish_reason?: string | null
+          grounded?: boolean | null
+          id?: string
+          input_tokens?: number | null
+          latency_ms?: number | null
+          model?: string | null
+          organization_id: string
+          output_tokens?: number | null
+          policy_flags?: string[]
+          provider?: string | null
+          role: string
+          sources?: Json
+          validation_status?: string | null
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          correlation_id?: string
+          created_at?: string
+          error_category?: string | null
+          finish_reason?: string | null
+          grounded?: boolean | null
+          id?: string
+          input_tokens?: number | null
+          latency_ms?: number | null
+          model?: string | null
+          organization_id?: string
+          output_tokens?: number | null
+          policy_flags?: string[]
+          provider?: string | null
+          role?: string
+          sources?: Json
+          validation_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_messages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_tool_events: {
+        Row: {
+          authorization_result: string
+          confirmed_at: string | null
+          confirmed_by: string | null
+          conversation_id: string
+          correlation_id: string
+          created_at: string
+          execution_result: Json | null
+          human_confirmation: string
+          id: string
+          organization_id: string
+          proposed_arguments: Json
+          tool_name: string
+        }
+        Insert: {
+          authorization_result?: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          conversation_id: string
+          correlation_id: string
+          created_at?: string
+          execution_result?: Json | null
+          human_confirmation?: string
+          id?: string
+          organization_id: string
+          proposed_arguments?: Json
+          tool_name: string
+        }
+        Update: {
+          authorization_result?: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          conversation_id?: string
+          correlation_id?: string
+          created_at?: string
+          execution_result?: Json | null
+          human_confirmation?: string
+          id?: string
+          organization_id?: string
+          proposed_arguments?: Json
+          tool_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_tool_events_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_tool_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -987,6 +1179,73 @@ export type Database = {
           },
         ]
       }
+      knowledge_documents: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          audience: string
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          organization_id: string
+          status: string
+          title: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          audience: string
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id: string
+          status?: string
+          title: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          audience?: string
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organization_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_documents_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_documents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_events: {
         Row: {
           actor_id: string | null
@@ -1198,6 +1457,87 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      onboarding_ai_notes: {
+        Row: {
+          content: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          model: string | null
+          onboarding_id: string
+          organization_id: string
+          provider: string | null
+          reviewed_by: string | null
+          status: string
+          submission_id: string
+          updated_at: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          model?: string | null
+          onboarding_id: string
+          organization_id: string
+          provider?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submission_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          model?: string | null
+          onboarding_id?: string
+          organization_id?: string
+          provider?: string | null
+          reviewed_by?: string | null
+          status?: string
+          submission_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_ai_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_ai_notes_onboarding_id_fkey"
+            columns: ["onboarding_id"]
+            isOneToOne: false
+            referencedRelation: "onboardings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_ai_notes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_ai_notes_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "onboarding_ai_notes_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "onboarding_submissions"
             referencedColumns: ["id"]
           },
         ]
@@ -3189,6 +3529,40 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      ai_record_exchange: { Args: { p_payload: Json }; Returns: Json }
+      ai_resolve_action: {
+        Args: {
+          p_actor_key: string
+          p_confirmed_by: string
+          p_decision: string
+          p_event_id: string
+          p_result: Json
+        }
+        Returns: {
+          authorization_result: string
+          confirmed_at: string | null
+          confirmed_by: string | null
+          conversation_id: string
+          correlation_id: string
+          created_at: string
+          execution_result: Json | null
+          human_confirmation: string
+          id: string
+          organization_id: string
+          proposed_arguments: Json
+          tool_name: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ai_tool_events"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      ai_usage_today: {
+        Args: { p_actor_key: string; p_organization_id: string }
+        Returns: Json
+      }
       asset_download_target: {
         Args: { p_asset_id: string; p_correlation_id?: string }
         Returns: Json
@@ -3285,6 +3659,7 @@ export type Database = {
       client_contracts: { Args: never; Returns: Json }
       client_invoice_view: { Args: { p_invoice_id: string }; Returns: Json }
       client_invoices: { Args: never; Returns: Json }
+      client_knowledge: { Args: { p_token_hash?: string }; Returns: Json }
       client_meetings: { Args: never; Returns: Json }
       client_onboarding: { Args: never; Returns: Json }
       client_payment_status: { Args: { p_payment_id: string }; Returns: Json }
@@ -3495,6 +3870,15 @@ export type Database = {
           p_proposal_id: string
           p_prospect_id: string
           p_token_hash: string
+        }
+        Returns: string
+      }
+      create_ops_task_for_prospect: {
+        Args: {
+          p_correlation_id?: string
+          p_detail: string
+          p_prospect_id: string
+          p_title: string
         }
         Returns: string
       }
@@ -4269,6 +4653,36 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      save_knowledge_document: {
+        Args: {
+          p_audience: string
+          p_body: string
+          p_correlation_id?: string
+          p_id: string
+          p_organization_id: string
+          p_title: string
+        }
+        Returns: {
+          approved_at: string | null
+          approved_by: string | null
+          audience: string
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          organization_id: string
+          status: string
+          title: string
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "knowledge_documents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       save_milestone: {
         Args: {
           p_correlation_id?: string
@@ -4293,6 +4707,36 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "milestones"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      save_onboarding_ai_note: {
+        Args: {
+          p_content: Json
+          p_correlation_id?: string
+          p_model: string
+          p_onboarding_id: string
+          p_provider: string
+          p_submission_id: string
+        }
+        Returns: {
+          content: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          model: string | null
+          onboarding_id: string
+          organization_id: string
+          provider: string | null
+          reviewed_by: string | null
+          status: string
+          submission_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "onboarding_ai_notes"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -4545,6 +4989,52 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "workspaces"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_knowledge_status: {
+        Args: { p_correlation_id?: string; p_id: string; p_status: string }
+        Returns: {
+          approved_at: string | null
+          approved_by: string | null
+          audience: string
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          organization_id: string
+          status: string
+          title: string
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "knowledge_documents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      set_onboarding_ai_note_status: {
+        Args: { p_correlation_id?: string; p_note_id: string; p_status: string }
+        Returns: {
+          content: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          model: string | null
+          onboarding_id: string
+          organization_id: string
+          provider: string | null
+          reviewed_by: string | null
+          status: string
+          submission_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "onboarding_ai_notes"
           isOneToOne: true
           isSetofReturn: false
         }

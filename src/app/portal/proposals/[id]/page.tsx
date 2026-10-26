@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { ActionForm } from "@/components/action-form";
+import { AssistantChat } from "@/components/ai/assistant-chat";
 import { ProposalDocument } from "@/components/proposal/proposal-document";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -14,6 +15,8 @@ import { fromPostgrestError } from "@/server/errors";
 import { createSupabaseServerClient } from "@/server/supabase/server";
 
 import { acceptProposal, respondToProposal } from "../../actions";
+
+import { askInPortal, confirmInPortal } from "./assistant-actions";
 
 export const metadata: Metadata = { title: "Proposal" };
 
@@ -55,6 +58,17 @@ export default async function PortalProposalPage(props: PageProps<"/portal/propo
       ) : (
         <p className="rounded-lg border p-4 text-sm">This proposal is being prepared.</p>
       )}
+
+      {version ? (
+        <AssistantChat
+          title="Questions about this proposal?"
+          notice="An AI assistant answers from this proposal and Atmors' approved information only. It can't change terms or prices, and a person can take over any time. Questions are logged to help Atmors follow up."
+          suggestions={["What's included?", "How does the payment schedule work?", "What happens after I accept?"]}
+          hiddenFields={{ proposalId: view.proposal.id }}
+          ask={askInPortal}
+          confirm={confirmInPortal}
+        />
+      ) : null}
 
       {status === "accepted" ? (
         <Card role="status">

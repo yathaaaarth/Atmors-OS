@@ -9,6 +9,7 @@ import { parseInput } from "@/server/actions/parse";
 import { runAction, type ActionResult } from "@/server/actions/result";
 import { assertCan } from "@/server/authorization/permissions";
 import { requireMemberContext } from "@/server/authorization/member-context";
+import { analyzeOnboarding } from "@/server/ai/assistant";
 import { AppError, fromPostgrestError } from "@/server/errors";
 import { createSupabaseServerClient } from "@/server/supabase/server";
 
@@ -148,6 +149,35 @@ export async function saveQuestionnaire(_: unknown, formData: FormData): Promise
     });
     if (error) throw fromPostgrestError(error);
     revalidatePath("/dashboard/onboarding/templates");
+    return null;
+  });
+}
+
+/** Onboarding strategist: a draft for the reviewer; it never changes the client's answers. */
+export async function runAiReview(_: unknown, formData: FormData): Promise<ActionResult<null>> {
+  return runAction("onboarding.ai_review", async (correlationId) => {
+    const { onboardingId } = parseInput(z.object({ onboardingId: z.uuid() }), formObject(formData, ["onboardingId"]));
+    const result = await analyzeOnboarding(onboardingId, correlationId);
+    if ("error" in result) throw new AppError("PROVIDER_UNAVAILABLE", { message: result.error });
+    revalidateOnboarding(onboardingId);
+    return null;
+  });
+}
+
+const noteSchema = z.object({ onboardingId: z.uuid(), noteId: z.uuid(), status: z.enum(["used", "discarded"]) });
+
+export async function setAiNoteStatus(_: unknown, formData: FormData): Promise<ActionResult<null>> {
+  return runAction("onboarding.ai_note_status", async (correlationId) => {
+    await requireMemberContext();
+    const values = parseInput(noteSchema, formObject(formData, ["onboardingId", "noteId", "status"]));
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase.rpc("set_onboarding_ai_note_status", {
+      p_note_id: values.noteId,
+      p_status: values.status,
+      p_correlation_id: correlationId,
+    });
+    if (error) throw fromPostgrestError(error);
+    revalidateOnboarding(values.onboardingId);
     return null;
   });
 }

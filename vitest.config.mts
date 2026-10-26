@@ -26,6 +26,11 @@ export default defineConfig({
       },
       {
         extends: true,
+        // AI evaluation against the configured provider; may spend money, never in CI.
+        test: { name: "ai-eval", include: ["tests/ai-eval/**/*.test.ts"], setupFiles: ["tests/support/load-env.ts"] },
+      },
+      {
+        extends: true,
         test: {
           name: "security",
           include: ["tests/security/**/*.test.ts"],

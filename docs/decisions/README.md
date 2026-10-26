@@ -127,3 +127,19 @@ These are the technical decisions made during implementation. Product decisions 
 - **Context:** The hosted concurrency test showed that simultaneous inserts against the exclusion constraint can deadlock (40P01) instead of failing cleanly.
 - **Decision:** Booking and rescheduling take `pg_advisory_xact_lock` per host before writing, so concurrent requests queue; a deadlock, if one still occurs, is treated as "slot taken". The exclusion constraint remains the guarantee.
 
+## D-021: AI behind a provider interface; offline provider by default
+
+- **Date:** 2026-10-28 · **Status:** accepted (vendor still open in the provider register)
+- **Decision:** `src/server/ai` defines `generate(request) -> response` with normalized error categories. Adapters: `anthropic` (Claude via the official SDK: `claude-opus-5-5`, effort `low` by default for chat, structured output through `output_config.format`, refusal handling, and server-side `fallbacks: "default"` under beta `server-side-fallback-2026-07-01`, switchable off with `AI_FALLBACKS=off`), `local` (offline extractive answers from approved context only) and `disabled`. `AI_PROVIDER` selects one; the default is `local`, so no prompts leave the system until a vendor is approved.
+- **Consequences:** The policy layer (`policy.ts`) applies to every provider and is tested with deliberately bad outputs. Changing vendors means adding an adapter and re-running `npm run ai:eval`.
+
+## D-022: The model gets no tools; it proposes and people confirm
+
+- **Date:** 2026-10-28 · **Status:** accepted
+- **Decision:** Responses are a fixed structured shape (answer, grounded, citations, needs_human, optional task suggestion and follow-up draft). The application turns those into `ai_tool_events` (`request_human_help`, `propose_task`, `draft_follow_up`) that run only when the right person clicks to confirm, through the normal RPCs that re-check permission. Drafts are never sent by the system. Each question is answered on its own (no replayed history), which limits prompt-injection carry-over.
+
+## D-023: Strategist output is a separate draft note
+
+- **Date:** 2026-10-28 · **Status:** accepted
+- **Decision:** The onboarding strategist writes `onboarding_ai_notes` (flags, draft questions, a brief labelled as interpretation, missing assets) for the reviewer. The reviewer can copy the questions into the review form and edit them before sending. No code path writes `onboarding_answers` other than a client submission (AT-021).
+

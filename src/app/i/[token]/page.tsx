@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { AssistantChat } from "@/components/ai/assistant-chat";
 import { ProposalDocument } from "@/components/proposal/proposal-document";
 import { PublicShell } from "@/components/public-shell";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { fromPostgrestError } from "@/server/errors";
 import { logger } from "@/server/logger";
 import { createSupabaseServerClient } from "@/server/supabase/server";
 
+import { askWithToken, confirmWithToken } from "./assistant-actions";
 import { HelpRequest, VerifyToContinue } from "./invitation-actions";
 
 export const metadata: Metadata = {
@@ -140,6 +142,17 @@ export default async function InvitationPage(props: PageProps<"/i/[token]">) {
           </CardHeader>
         </Card>
       )}
+
+      {proposal && version ? (
+        <AssistantChat
+          title="Questions about this proposal?"
+          notice="An AI assistant answers from this proposal and Atmors' approved information only. It can't change terms or prices, and a person can take over any time. Questions are logged to help Atmors follow up."
+          suggestions={["What's included?", "How does the payment schedule work?", "What happens after I accept?"]}
+          hiddenFields={{ token }}
+          ask={askWithToken}
+          confirm={confirmWithToken}
+        />
+      ) : null}
 
       {version && open ? (
         <Card className="border-brand/40">
