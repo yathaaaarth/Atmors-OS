@@ -108,10 +108,9 @@ export function normalizePayPalEvent(body: Json, merchantId: string | null): Nor
 }
 
 /**
- * A completed capture from the Orders API as a verified event. The response
- * came from PayPal over our authenticated server call, so it is as
- * trustworthy as a signed webhook; the webhook for the same capture is then a
- * duplicate (AT-015).
+ * Summarize a capture response from the Orders API: the event it should lead
+ * to, or null while PayPal has not completed it. Used for logging only; the
+ * ledger changes only on the verified webhook.
  */
 export function captureToEvent(order: Json, merchantId: string | null): NormalizedPaymentEvent | null {
   const unit = obj(arr(order.purchase_units)[0]);

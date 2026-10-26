@@ -52,19 +52,6 @@ export async function ingestPaymentWebhook(
   return recordPaymentEvent(provider.id, event, rawBody, correlationId);
 }
 
-/**
- * Record an event the server obtained itself from the provider's API (for
- * example a PayPal capture response). It is authentic by construction and
- * goes through the same deduplicating ingest as webhooks.
- */
-export async function ingestFetchedPaymentEvent(
-  providerId: string,
-  event: NormalizedPaymentEvent,
-  correlationId: string,
-): Promise<IngestOutcome> {
-  return recordPaymentEvent(providerId, event, JSON.stringify(event), correlationId);
-}
-
 async function recordPaymentEvent(
   providerId: string,
   event: NormalizedPaymentEvent | null,

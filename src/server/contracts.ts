@@ -116,8 +116,9 @@ const sha256 = (value: string) => createHash("sha256").update(value).digest("hex
 
 /**
  * Built-in signing, step 1: email a one-time code to the named signer. The
- * code is sent directly (not through the outbox) so it is never stored in
- * readable form; the database keeps only its hash. In development without an
+ * code is sent directly, a deliberate exception to the outbox rule (D-031):
+ * outbox payloads are readable by operations staff, and the database must keep
+ * only the code's hash. In development without an
  * email service the code is returned so the flow can be tried locally.
  */
 export async function startInternalSignature(contractId: string, checksum: string, correlationId: string): Promise<{ sentTo: string; devCode?: string }> {

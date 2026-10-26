@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 
 import { paymentStatusSchema, startPaymentResultSchema, type PaymentStatus } from "@/modules/billing/schema";
 import { AppError, fromPostgrestError } from "@/server/errors";
-import { ingestFetchedPaymentEvent, ingestPaymentWebhook } from "@/server/integrations/ingest";
+import { ingestPaymentWebhook } from "@/server/integrations/ingest";
 import { checkoutOptions, paymentProvider, paypalPayments, sandboxPayments } from "@/server/integrations/payments/registry";
 import { SANDBOX_PAYMENT_ACCOUNT } from "@/server/integrations/payments/sandbox";
 import type { CheckoutInstructions } from "@/server/integrations/payments/types";
@@ -123,9 +123,10 @@ export async function completeSandboxPayment(
 }
 
 /**
- * PayPal return: capture the approved order on the server. Only the capture
- * response (or the webhook) marks the payment paid; the query string the
- * browser brings back is only a hint about which order to capture.
+ * PayPal return: capture the approved order (PayPal moves the money only when
+ * we ask). This changes nothing in ClientOS: the payment is marked paid only
+ * by the verified PAYMENT.CAPTURE.COMPLETED webhook, through the normal
+ * ingest path. The query string is just a hint about which order to capture.
  */
 export async function capturePayPalReturn(paymentId: string, orderToken: string, correlationId: string): Promise<PaymentStatus> {
   const status = await getPaymentStatus(paymentId);
@@ -134,9 +135,8 @@ export async function capturePayPalReturn(paymentId: string, orderToken: string,
     throw new AppError("NOT_FOUND", { detail: "not a PayPal payment for this order" });
   }
   if (status.status === "created" || status.status === "pending") {
-    const event = await paypal.capture(status.provider_order_id, paymentId);
-    if (event) await ingestFetchedPaymentEvent("paypal", event, correlationId);
-    else logger.info("payment.paypal_capture_pending", { correlation_id: correlationId, payment_id: paymentId });
+    const captured = await paypal.capture(status.provider_order_id, paymentId);
+    logger.info("payment.paypal_captured", { correlation_id: correlationId, payment_id: paymentId, completed: captured !== null });
   }
   return getPaymentStatus(paymentId);
 }

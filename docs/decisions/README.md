@@ -181,8 +181,15 @@ These are the technical decisions made during implementation. Product decisions 
 - **Date:** 2026-10-30 · **Status:** accepted
 - **Decision:** Clients choose how to pay from the methods enabled for the invoice currency:
   - **Razorpay**, with international cards enabled on the merchant account, for every currency.
-  - **PayPal** (Orders v2) for USD, EUR, GBP, AUD, CAD and SGD. INR is not offered, because PayPal India does not take domestic payments. PayPal shows the approval page, then the server captures the order with its own credentials. That capture response is ingested as a verified event (`capture:<id>`), and the later `PAYMENT.CAPTURE.COMPLETED` webhook (verified through PayPal's verification API against `PAYPAL_WEBHOOK_ID`) is a deduplicated duplicate.
+  - **PayPal** (Orders v2) for USD, EUR, GBP, AUD, CAD and SGD. INR is not offered, because PayPal India does not take domestic payments. PayPal shows the approval page; when the buyer returns, the server captures the order with its own credentials. The capture changes nothing in ClientOS: only the `PAYMENT.CAPTURE.COMPLETED` webhook, verified through PayPal's verification API against `PAYPAL_WEBHOOK_ID`, marks the payment paid, so a browser redirect never changes payment state. The client sees "Confirming your payment" for the few seconds in between.
   - **Bank transfer**: the instructions from Billing → Invoice details are shown on unpaid invoices. "I've sent the transfer" creates a finance task (`client_report_transfer`), never a payment. Finance records the payment manually once the money arrives (D-016, AT-019).
 
   The client's country is captured on the agreement. When it is not India, invoices are marked as export of services and print the LUT reference, so the supply is zero-rated without IGST.
 - **Consequences:** Stripe is not used, because new Indian accounts are invite-only; the adapter pattern allows it later. Card and PayPal fees (about 3 to 4.4 % plus currency conversion) are paid by Atmors. A wire is cheaper for large invoices, which is why it is always shown when bank details exist. Invoice numbering, GST and LUT wording need accountant review before go-live.
+
+## D-031: Signing codes are emailed directly, not through the outbox
+
+- **Date:** 2026-10-30 · **Status:** accepted
+- **Decision:** All other email goes through the `notifications` outbox. The built-in signer's one-time code is the exception: it is sent directly from the request with a unique idempotency key, and the database stores only its SHA-256 hash.
+- **Why:** outbox payloads are readable by staff with `operations.manage` and are kept for retries. A queued code would let staff see a client's code, which weakens the signature evidence (D-029), and the scheduler's delay of up to 5 minutes would eat into the code's 10 minutes. This is the same reasoning behind Supabase Auth sending sign-in links directly.
+- **Consequences:** if the email service is down, the signer sees an error and can request a new code; there is no automatic retry. Codes never appear in the database or the logs.
