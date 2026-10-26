@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { hasAuthEnv } from "./support/auth";
+
 test("health endpoint responds with the envelope and a correlation id", async ({ request }) => {
   const response = await request.get("/api/health");
   expect(response.ok()).toBe(true);
@@ -51,6 +53,8 @@ test("baseline security headers are present", async ({ request }) => {
 });
 
 test("an unknown invitation link reveals nothing and offers a new-link request", async ({ page }) => {
+  // A well-formed token is looked up in the database; CI has no database credentials.
+  test.skip(!hasAuthEnv, "needs Supabase dev credentials");
   await page.goto(`/i/${"A".repeat(43)}`);
   await expect(page.getByRole("heading", { name: "This link isn't valid" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Request a new link" })).toBeVisible();
