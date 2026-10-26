@@ -2,6 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
+import { staffMfaRequirement } from "@/server/auth/mfa";
 import { getSessionUser } from "@/server/auth/session";
 import { AppError, fromPostgrestError } from "@/server/errors";
 import { createSupabaseServerClient } from "@/server/supabase/server";
@@ -63,5 +64,8 @@ export async function requireMemberContext(): Promise<MemberContext> {
   const result = await getMemberContext();
   if (result.status === "unauthenticated") throw new AppError("UNAUTHENTICATED");
   if (result.status === "not_member") throw new AppError("FORBIDDEN", { detail: "no active membership" });
+  if ((await staffMfaRequirement()) !== "ok") {
+    throw new AppError("FORBIDDEN", { message: "Verify your authenticator code to continue.", detail: "mfa required" });
+  }
   return result.context;
 }

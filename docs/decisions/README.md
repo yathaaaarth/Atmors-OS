@@ -143,3 +143,23 @@ These are the technical decisions made during implementation. Product decisions 
 - **Date:** 2026-10-28 · **Status:** accepted
 - **Decision:** The onboarding strategist writes `onboarding_ai_notes` (flags, draft questions, a brief labelled as interpretation, missing assets) for the reviewer. The reviewer can copy the questions into the review form and edit them before sending. No code path writes `onboarding_answers` other than a client submission (AT-021).
 
+## D-024: Notifications are an outbox filled by database triggers
+
+- **Date:** 2026-10-29 · **Status:** accepted
+- **Decision:** Business state changes enqueue a row in `notifications` with a unique idempotency key from database triggers. Triggers are on agreements, invoices, meetings, onboarding, workspaces and proposals. Enqueueing happens in the same transaction as the change, so a rolled-back change sends nothing and a replayed one adds nothing. `/api/cron/dispatch` claims due rows with `FOR UPDATE SKIP LOCKED`, sends through the email adapter (Resend, or a log provider without keys) with the same key as the provider's idempotency key, and retries with backoff up to five attempts before raising an Operations task (AT-031). Emails carry portal links, not terms or amounts.
+
+## D-025: Scheduled jobs through authenticated cron routes
+
+- **Date:** 2026-10-29 · **Status:** accepted
+- **Decision:** `/api/cron/dispatch` (every 5 minutes) and `/api/cron/daily` (billing checks, meeting reminders, stale-payment tasks) run on Vercel Cron with `Authorization: Bearer $CRON_SECRET`. They fail closed without the secret and record each run in `job_runs`, shown on Operations. Every job is idempotent. A managed job service (Trigger.dev, provider register) can replace the scheduler without changing the jobs.
+
+## D-026: Application-level rate limits in Postgres
+
+- **Date:** 2026-10-29 · **Status:** accepted
+- **Decision:** In addition to edge limits (D-009), the app counts requests per hashed IP (or user) in fixed windows in `rate_limits`, so limits hold across serverless instances. It fails open, with a log entry, if the limiter itself is unavailable. Raw IP addresses are never stored.
+
+## D-027: Nonce-based CSP and staff MFA
+
+- **Date:** 2026-10-29 · **Status:** accepted
+- **Decision:** `src/proxy.ts` issues a per-request nonce CSP: scripts need the nonce, with `strict-dynamic` for the Razorpay checkout; no plugins; no framing. Inline style attributes are allowed because UI libraries use them. Staff who have enrolled TOTP must reach AAL2 each session before dashboard pages or staff actions run; `REQUIRE_STAFF_MFA=true` makes enrollment mandatory and is required in staging and production.
+

@@ -33,8 +33,10 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
   if (can(context, "proof.read")) items.push({ href: "/dashboard/proof", label: "Proof library" });
   if (can(context, "knowledge.manage")) items.push({ href: "/dashboard/knowledge", label: "Knowledge" });
   if (can(context, "ai.monitor")) items.push({ href: "/dashboard/ai", label: "AI usage" });
+  if (can(context, "operations.manage")) items.push({ href: "/dashboard/operations", label: "Operations" });
   if (can(context, "members.read")) items.push({ href: "/dashboard/team", label: "Team" });
   if (can(context, "audit.read")) items.push({ href: "/dashboard/audit", label: "Audit log" });
+  items.push({ href: "/dashboard/security", label: "Account security" });
 
   return (
     <div className="flex flex-1 flex-col md:flex-row">

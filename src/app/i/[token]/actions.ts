@@ -12,6 +12,7 @@ import { getSessionUser } from "@/server/auth/session";
 import { AppError, fromPostgrestError, fromZodError } from "@/server/errors";
 import { INVITE_COOKIE, INVITE_COOKIE_OPTIONS } from "@/server/invitations";
 import { logger } from "@/server/logger";
+import { RATE_RULES, assertRateLimit } from "@/server/rate-limit";
 import { createSupabaseAdminClient } from "@/server/supabase/admin";
 import { createSupabaseServerClient } from "@/server/supabase/server";
 
@@ -31,6 +32,7 @@ export async function beginInvitationSignIn(_: unknown, formData: FormData): Pro
   let redirectTo: string | null = null;
   const result = await runAction("invitation.begin_sign_in", async (correlationId) => {
     const { token, tokenHash } = tokenHashOrThrow(formData.get("token"));
+    await assertRateLimit(RATE_RULES.signIn);
     const user = await getSessionUser();
     const supabase = await createSupabaseServerClient();
 
@@ -97,6 +99,7 @@ export async function requestInvitationHelp(_: unknown, formData: FormData): Pro
   return runAction("invitation.request_help", async (correlationId) => {
     const parsed = helpSchema.safeParse(formObject(formData, ["token", "kind", "message"]));
     if (!parsed.success) throw fromZodError(parsed.error);
+    await assertRateLimit(RATE_RULES.publicForm);
     // Unknown or malformed tokens get the same success response.
     if (!isPlausibleInvitationToken(parsed.data.token)) return null;
 

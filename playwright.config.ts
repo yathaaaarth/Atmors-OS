@@ -9,6 +9,9 @@ const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${port}`;
 
 export default defineConfig({
   testDir: "tests/e2e",
+  // Journeys make many round trips to the hosted dev database.
+  timeout: 60_000,
+  expect: { timeout: 15_000 },
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,

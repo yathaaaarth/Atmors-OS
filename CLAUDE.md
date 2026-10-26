@@ -12,3 +12,5 @@
 - PostgREST embeds between `proposals` and `proposal_versions` need an explicit foreign-key hint (for example `proposals!proposal_versions_proposal_id_fkey(...)`).
 - Provider callbacks go through `src/server/integrations/ingest.ts` and the service-role-only ingest RPCs. Never change payment, signature or activation state from a browser redirect or an unverified event.
 - Sandbox providers (`ENABLE_SANDBOX_PROVIDERS`) are for development only (D-013). New provider adapters implement the interfaces in `src/server/integrations/*/types.ts`.
+- Outgoing email goes through the `notifications` outbox (enqueue with an idempotency key); never send email directly from a request.
+- Before calling work done, check `docs/release-readiness.md` still describes the state of the acceptance tests.

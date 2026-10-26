@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { buildCsp, newNonce } from "@/lib/csp";
 import { publicEnv } from "@/lib/env";
 import { CORRELATION_HEADER, resolveCorrelationId } from "@/server/correlation";
 import type { Database } from "@/server/supabase/database.types";
@@ -16,6 +17,9 @@ export async function proxy(request: NextRequest) {
   const correlationId = resolveCorrelationId(request.headers.get(CORRELATION_HEADER));
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(CORRELATION_HEADER, correlationId);
+  // Fresh nonce per request; Next.js applies it to its own scripts.
+  const csp = buildCsp(newNonce(), { dev: process.env.NODE_ENV === "development" });
+  requestHeaders.set("content-security-policy", csp);
 
   let response = NextResponse.next({ request: { headers: requestHeaders } });
   const env = publicEnv();
@@ -51,10 +55,12 @@ export async function proxy(request: NextRequest) {
     const redirect = NextResponse.redirect(loginUrl);
     response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
     redirect.headers.set(CORRELATION_HEADER, correlationId);
+    redirect.headers.set("content-security-policy", csp);
     return redirect;
   }
 
   response.headers.set(CORRELATION_HEADER, correlationId);
+  response.headers.set("content-security-policy", csp);
   return response;
 }
 

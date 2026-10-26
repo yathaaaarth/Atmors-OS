@@ -7,6 +7,7 @@ import { parseInput } from "@/server/actions/parse";
 import { runAction, type ActionResult } from "@/server/actions/result";
 import { askSalesAssistant, confirmSalesHandoff, type AssistantReply } from "@/server/ai/assistant";
 import { parseActionId, parseAsk } from "@/server/ai/actions-shared";
+import { RATE_RULES, assertRateLimit } from "@/server/rate-limit";
 
 function scope(formData: FormData) {
   const { proposalId } = parseInput(z.object({ proposalId: z.uuid() }), formObject(formData, ["proposalId"]));
@@ -16,6 +17,7 @@ function scope(formData: FormData) {
 export async function askInPortal(formData: FormData): Promise<ActionResult<AssistantReply>> {
   return runAction("ai.sales_ask_portal", async (correlationId) => {
     const { question, conversationId } = parseAsk(formData);
+    await assertRateLimit(RATE_RULES.assistant);
     return askSalesAssistant(scope(formData), question, conversationId, correlationId);
   });
 }

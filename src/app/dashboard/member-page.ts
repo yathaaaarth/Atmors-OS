@@ -2,6 +2,7 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 
+import { staffMfaRequirement } from "@/server/auth/mfa";
 import { getMemberContext } from "@/server/authorization/member-context";
 import { can, type MemberContext, type Permission } from "@/server/authorization/permissions";
 
@@ -11,10 +12,19 @@ export type MemberPageAccess = { allowed: true; context: MemberContext } | { all
  * Per-page access check. Layouts do not re-render on client navigation, so
  * every dashboard page calls this itself rather than relying on the layout.
  */
-export async function memberPageAccess(path: string, permission?: Permission): Promise<MemberPageAccess> {
+export async function memberPageAccess(
+  path: string,
+  permission?: Permission,
+  options: { allowWithoutMfa?: boolean } = {},
+): Promise<MemberPageAccess> {
   const result = await getMemberContext();
   if (result.status === "unauthenticated") redirect(`/login?next=${encodeURIComponent(path)}`);
   if (result.status === "not_member") return { allowed: false };
+  if (!options.allowWithoutMfa) {
+    const mfa = await staffMfaRequirement();
+    if (mfa === "challenge") redirect(`/mfa?next=${encodeURIComponent(path)}`);
+    if (mfa === "enroll") redirect("/dashboard/security?setup=1");
+  }
   if (permission && !can(result.context, permission)) return { allowed: false };
   return { allowed: true, context: result.context };
 }

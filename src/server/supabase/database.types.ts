@@ -1179,6 +1179,36 @@ export type Database = {
           },
         ]
       }
+      job_runs: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          job: string
+          started_at: string
+          stats: Json
+          status: string
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          job: string
+          started_at?: string
+          stats?: Json
+          status?: string
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          job?: string
+          started_at?: string
+          stats?: Json
+          status?: string
+        }
+        Relationships: []
+      }
       knowledge_documents: {
         Row: {
           approved_at: string | null
@@ -1457,6 +1487,80 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          attempts: number
+          channel: string
+          claimed_at: string | null
+          created_at: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          next_attempt_at: string
+          organization_id: string
+          payload: Json
+          provider: string | null
+          provider_message_id: string | null
+          recipient_email: string
+          related_id: string | null
+          related_type: string | null
+          sent_at: string | null
+          status: string
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          channel?: string
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          last_error?: string | null
+          next_attempt_at?: string
+          organization_id: string
+          payload?: Json
+          provider?: string | null
+          provider_message_id?: string | null
+          recipient_email: string
+          related_id?: string | null
+          related_type?: string | null
+          sent_at?: string | null
+          status?: string
+          template_key: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          channel?: string
+          claimed_at?: string | null
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          organization_id?: string
+          payload?: Json
+          provider?: string | null
+          provider_message_id?: string | null
+          recipient_email?: string
+          related_id?: string | null
+          related_type?: string | null
+          sent_at?: string | null
+          status?: string
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -3030,6 +3134,24 @@ export type Database = {
           },
         ]
       }
+      rate_limits: {
+        Row: {
+          count: number
+          key: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          key: string
+          window_start: string
+        }
+        Update: {
+          count?: number
+          key?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           allowed: boolean
@@ -3620,6 +3742,36 @@ export type Database = {
         }
         Returns: Json
       }
+      claim_notifications: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          channel: string
+          claimed_at: string | null
+          created_at: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          next_attempt_at: string
+          organization_id: string
+          payload: Json
+          provider: string | null
+          provider_message_id: string | null
+          recipient_email: string
+          related_id: string | null
+          related_type: string | null
+          sent_at: string | null
+          status: string
+          template_key: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notifications"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       client_book_meeting: {
         Args: {
           p_correlation_id?: string
@@ -3748,6 +3900,42 @@ export type Database = {
         Returns: Json
       }
       client_workspace: { Args: never; Returns: Json }
+      complete_notification: {
+        Args: {
+          p_error: string
+          p_id: string
+          p_ok: boolean
+          p_provider: string
+          p_provider_message_id: string
+        }
+        Returns: {
+          attempts: number
+          channel: string
+          claimed_at: string | null
+          created_at: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          next_attempt_at: string
+          organization_id: string
+          payload: Json
+          provider: string | null
+          provider_message_id: string | null
+          recipient_email: string
+          related_id: string | null
+          related_type: string | null
+          sent_at: string | null
+          status: string
+          template_key: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "notifications"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       complete_ops_task: {
         Args: {
           p_correlation_id?: string
@@ -4311,6 +4499,10 @@ export type Database = {
         }
         Returns: Json
       }
+      rate_limit_hit: {
+        Args: { p_key: string; p_limit: number; p_window_seconds: number }
+        Returns: boolean
+      }
       record_activation_review: {
         Args: {
           p_contract_id: string
@@ -4374,6 +4566,16 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      record_job_run: {
+        Args: {
+          p_error: string
+          p_job: string
+          p_started_at: string
+          p_stats: Json
+          p_status: string
+        }
+        Returns: string
       }
       record_manual_payment: {
         Args: {
@@ -4510,6 +4712,36 @@ export type Database = {
         }
         Returns: undefined
       }
+      retry_notification: {
+        Args: { p_correlation_id?: string; p_id: string }
+        Returns: {
+          attempts: number
+          channel: string
+          claimed_at: string | null
+          created_at: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          next_attempt_at: string
+          organization_id: string
+          payload: Json
+          provider: string | null
+          provider_message_id: string | null
+          recipient_email: string
+          related_id: string | null
+          related_type: string | null
+          sent_at: string | null
+          status: string
+          template_key: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "notifications"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       review_onboarding: {
         Args: {
           p_correlation_id?: string
@@ -4588,6 +4820,7 @@ export type Database = {
         Args: { p_correlation_id?: string; p_organization_id: string }
         Returns: Json
       }
+      run_periodic_checks: { Args: never; Returns: Json }
       save_booking_host: {
         Args: {
           p_active?: boolean

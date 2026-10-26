@@ -153,8 +153,9 @@ describe.skipIf(!hasSupabaseTestEnv)("RLS and authorization boundaries", () => {
         .from("role_permissions")
         .insert({ role: "delivery", permission_key: "finance.read" });
       expect(insert.error).not.toBeNull();
+      // Delivery keeps exactly the seeded policy (v5 adds only the read-only copilot).
       const { data } = await admin.from("role_permissions").select("permission_key").eq("role", "delivery");
-      expect(data ?? []).toEqual([]);
+      expect((data ?? []).map((row) => row.permission_key)).toEqual(["ai.copilot"]);
     });
 
     it("delivery and CEO lack members.manage and get FORBIDDEN from the RPC", async () => {

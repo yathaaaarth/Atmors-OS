@@ -2,7 +2,7 @@
 
 This is the client conversion portal and internal operations dashboard for Atmors. The source of truth for scope and behaviour is [`Atmors_ClientOS_Final_PRD_v1.0.pdf`](Atmors_ClientOS_Final_PRD_v1.0.pdf).
 
-**Status:** Phase 5 complete. It includes everything from Phases 1 and 2 (auth, roles, RLS, audit, CRM, invitations, versioned proposals, proof library, client portal) plus:
+**Status:** All six PRD phases are built and tested; see [docs/release-readiness.md](docs/release-readiness.md) for every acceptance test and the remaining release gates. It includes everything from Phases 1 and 2 (auth, roles, RLS, audit, CRM, invitations, versioned proposals, proof library, client portal) plus:
 - shared booking with database-level conflict prevention, host routing, timezones and a callback fallback
 - agreements generated from the exact accepted proposal version, with an e-signature adapter (sandbox until a vendor is approved)
 - per-agreement payment schedules, invoices, payments through a provider adapter (Razorpay or sandbox), verified webhooks, refunds, disputes and manual reconciliation
@@ -10,6 +10,7 @@ This is the client conversion portal and internal operations dashboard for Atmor
 - onboarding questionnaires with conditional follow-ups, immutable submission revisions and a review loop
 - private client file uploads, access-grant tracking, and client workspaces with milestones, delivery tasks and assignment-based access
 - Atmors AI behind a provider interface: a grounded proposal assistant with human handoff, a read-only staff copilot, an onboarding strategist, approved knowledge, usage budgets, logging and an evaluation set
+- hardening: idempotent email notifications with retries, scheduled jobs, rate limits, a nonce-based Content Security Policy, staff MFA, accessibility checks, an operations health page, and runbooks ([docs/runbooks](docs/runbooks/README.md)); deployment notes in [docs/deployment.md](docs/deployment.md)
 
 ## Stack
 
@@ -69,7 +70,7 @@ src/
     errors.ts, logger.ts, correlation.ts
 supabase/migrations/    versioned schema, RLS policies, RPCs
 tests/{unit,db,security,e2e}
-docs/{architecture,decisions}
+docs/{architecture,decisions,runbooks,ai}
 ```
 
 ## Conventions

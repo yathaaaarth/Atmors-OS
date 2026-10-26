@@ -1,12 +1,14 @@
 import type { NextConfig } from "next";
 
-// Baseline security headers (PRD §11). A nonce-based CSP follows once the
-// third-party surfaces (payments, e-signature, scheduling) are chosen.
+// Baseline security headers (PRD §11). The nonce-based Content Security
+// Policy is set per request in src/proxy.ts (src/lib/csp.ts).
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+  // payment=self lets the Razorpay checkout use the Payment Request API.
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(self \"https://api.razorpay.com\")" },
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
   { key: "X-Robots-Tag", value: "noindex, nofollow" },
 ];

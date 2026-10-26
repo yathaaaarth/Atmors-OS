@@ -8,6 +8,7 @@ import { parseInput } from "@/server/actions/parse";
 import { runAction, type ActionResult } from "@/server/actions/result";
 import { askCopilot, confirmCopilotTask, type AssistantReply } from "@/server/ai/assistant";
 import { parseActionId, parseAsk } from "@/server/ai/actions-shared";
+import { RATE_RULES, assertRateLimit } from "@/server/rate-limit";
 
 const prospectSchema = z.object({ prospectId: z.uuid() });
 
@@ -15,6 +16,7 @@ export async function askCopilotAction(formData: FormData): Promise<ActionResult
   return runAction("ai.copilot_ask", async (correlationId) => {
     const { prospectId } = parseInput(prospectSchema, formObject(formData, ["prospectId"]));
     const { question, conversationId } = parseAsk(formData);
+    await assertRateLimit(RATE_RULES.assistant);
     return askCopilot(prospectId, question, conversationId, correlationId);
   });
 }

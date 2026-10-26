@@ -3,11 +3,13 @@ import { requireSessionUser } from "@/server/auth/session";
 import { assertSameOrigin, handleRoute } from "@/server/http/route";
 import { uploadClientAsset } from "@/server/assets";
 import { MAX_UPLOAD_BYTES } from "@/modules/onboarding/files";
+import { RATE_RULES, assertRateLimit } from "@/server/rate-limit";
 
 /** Client asset upload (multipart, one file). Validated and stored privately (AT-022). */
 export const POST = handleRoute(async ({ request, correlationId }) => {
   assertSameOrigin(request);
-  await requireSessionUser();
+  const user = await requireSessionUser();
+  await assertRateLimit(RATE_RULES.upload, `user:${user.id}`);
   const length = Number(request.headers.get("content-length") ?? 0);
   if (length > MAX_UPLOAD_BYTES + 64 * 1024) throw new AppError("VALIDATION_FAILED", { message: "Files must be 10 MB or smaller." });
 

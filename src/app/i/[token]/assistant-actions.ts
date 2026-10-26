@@ -5,6 +5,7 @@ import { runAction, type ActionResult } from "@/server/actions/result";
 import { askSalesAssistant, confirmSalesHandoff, type AssistantReply } from "@/server/ai/assistant";
 import { parseActionId, parseAsk } from "@/server/ai/actions-shared";
 import { AppError } from "@/server/errors";
+import { RATE_RULES, assertRateLimit } from "@/server/rate-limit";
 
 function scope(formData: FormData) {
   const token = formData.get("token");
@@ -16,6 +17,7 @@ function scope(formData: FormData) {
 export async function askWithToken(formData: FormData): Promise<ActionResult<AssistantReply>> {
   return runAction("ai.sales_ask_token", async (correlationId) => {
     const { question, conversationId } = parseAsk(formData);
+    await assertRateLimit(RATE_RULES.assistant);
     return askSalesAssistant(scope(formData), question, conversationId, correlationId);
   });
 }

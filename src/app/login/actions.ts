@@ -5,6 +5,7 @@ import { safeRedirectPath } from "@/lib/safe-redirect";
 import { runAction, type ActionResult } from "@/server/actions/result";
 import { AppError, fromZodError } from "@/server/errors";
 import { logger } from "@/server/logger";
+import { RATE_RULES, assertRateLimit } from "@/server/rate-limit";
 import { createSupabaseServerClient } from "@/server/supabase/server";
 
 import { signInSchema } from "./schema";
@@ -17,6 +18,7 @@ export async function requestSignInLink(input: unknown): Promise<ActionResult<{ 
   return runAction("auth.request_sign_in_link", async (correlationId) => {
     const parsed = signInSchema.safeParse(input);
     if (!parsed.success) throw fromZodError(parsed.error);
+    await assertRateLimit(RATE_RULES.signIn);
 
     const next = safeRedirectPath(parsed.data.next);
     const callback = new URL("/auth/callback", publicEnv().NEXT_PUBLIC_SITE_URL);

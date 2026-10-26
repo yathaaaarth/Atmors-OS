@@ -21,6 +21,7 @@ test.describe("proposal journey", () => {
   let invitationUrl = "";
 
   test("CEO sees every dashboard area without errors", async ({ browser, baseURL }) => {
+    test.setTimeout(120_000); // visits every dashboard area
     const context = await browser.newContext();
     await signInContext(context, "p2-ceo+clientos@example.com", baseURL!);
     const page = await context.newPage();
