@@ -230,7 +230,7 @@ export default async function MeetingsPage() {
           ) : ownHost ? (
             <HostForm userId={context.userId} name="You" host={ownHost} canRoute={false} />
           ) : (
-            <p className="text-sm text-muted-foreground">You are not set up as a booking host. Ask the CTO/COO to add you.</p>
+            <p className="text-sm text-muted-foreground">You are not set up as a booking host. Ask the Founder to add you.</p>
           )}
         </CardContent>
       </Card>

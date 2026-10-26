@@ -47,7 +47,7 @@ export type MemberRole = Enums<"member_role">;
 
 export const ROLE_LABELS: Record<MemberRole, string> = {
   ceo: "CEO",
-  cto_coo: "CTO / COO",
+  cto_coo: "Founder",
   delivery: "Delivery",
   sales: "Sales",
 };

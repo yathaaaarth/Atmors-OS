@@ -29,6 +29,8 @@ Clients are never organization members, and they never read tables directly.
 
 Grants are stored in `role_permissions`. The application only types the keys (`src/server/authorization/permissions.ts`).
 
+The `cto_coo` role is labelled **Founder** in the app (Atmors' second founder holds it); its permissions follow the PRD's CTO/COO.
+
 | Permission | CEO | CTO/COO | Sales | Delivery |
 |---|:-:|:-:|:-:|:-:|
 | members.read | ✓ | ✓ | | |
