@@ -10,3 +10,5 @@
 - Run `npm run check` before calling work done; it includes `tests/db`, which applies every migration to PGlite. Run `npm run test:security` when a change touches RLS, RPCs or grants.
 - Clients never read tables directly. Client-facing data comes from RPC projections (`private.client_proposal_json`). Keep internal fields out of them.
 - PostgREST embeds between `proposals` and `proposal_versions` need an explicit foreign-key hint (for example `proposals!proposal_versions_proposal_id_fkey(...)`).
+- Provider callbacks go through `src/server/integrations/ingest.ts` and the service-role-only ingest RPCs. Never change payment, signature or activation state from a browser redirect or an unverified event.
+- Sandbox providers (`ENABLE_SANDBOX_PROVIDERS`) are for development only (D-013). New provider adapters implement the interfaces in `src/server/integrations/*/types.ts`.

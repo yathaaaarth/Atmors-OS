@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { ClientProof } from "@/modules/proposals/client-view";
 import { versionToEditorValues } from "@/modules/proposals/editor-values";
-import { formatMoney } from "@/modules/proposals/money";
+import { formatMoney, type ScheduleItem } from "@/modules/proposals/money";
 import { todayIst, toClientVersion } from "@/modules/proposals/staff-preview";
 import { can } from "@/server/authorization/permissions";
 import { fromPostgrestError } from "@/server/errors";
@@ -21,6 +21,7 @@ import { createSupabaseServerClient } from "@/server/supabase/server";
 import { memberPageAccess } from "../../member-page";
 import { createRevision, reviewVersion, sendVersion, submitVersion, withdrawProposal } from "../actions";
 
+import { GenerateContract } from "./generate-contract";
 import { ProposalEditor } from "./proposal-editor";
 
 export const metadata: Metadata = { title: "Proposal" };
@@ -45,7 +46,7 @@ export default async function ProposalPage(props: PageProps<"/dashboard/proposal
   const supabase = await createSupabaseServerClient();
   const { data: proposal, error } = await supabase
     .from("proposals")
-    .select("*, prospects(id, name, company)")
+    .select("*, prospects(id, name, company, email)")
     .eq("id", id)
     .maybeSingle();
   if (error) throw fromPostgrestError(error);
@@ -64,6 +65,7 @@ export default async function ProposalPage(props: PageProps<"/dashboard/proposal
   if (eventsResult.error) throw fromPostgrestError(eventsResult.error);
   const versions = versionsResult.data ?? [];
   const current = versions.find((version) => version.id === proposal.current_version_id) ?? versions[0];
+  const accepted = versions.find((version) => version.id === proposal.accepted_version_id);
   if (!current) notFound();
 
   const [linesResult, proofLinksResult] = await Promise.all([
@@ -212,11 +214,24 @@ export default async function ProposalPage(props: PageProps<"/dashboard/proposal
           ) : null}
 
           {proposal.status === "accepted" ? (
-            <p>
-              Accepted on {dateTime.format(new Date(proposal.accepted_at!))} against version{" "}
-              {versions.find((version) => version.id === proposal.accepted_version_id)?.version_number}. Contract
-              generation arrives in Phase 3.
-            </p>
+            <>
+              <p>
+                Accepted on {dateTime.format(new Date(proposal.accepted_at!))} against version{" "}
+                {versions.find((version) => version.id === proposal.accepted_version_id)?.version_number}.
+              </p>
+              {can(context, "contracts.read") && accepted ? (
+                <GenerateContract
+                  context={context}
+                  proposalId={proposal.id}
+                  schedule={accepted.payment_schedule as ScheduleItem[]}
+                  prospect={{
+                    name: proposal.prospects?.name ?? "",
+                    company: proposal.prospects?.company ?? null,
+                    email: proposal.prospects?.email ?? null,
+                  }}
+                />
+              ) : null}
+            </>
           ) : null}
           {proposal.status === "declined" ? (
             <p>Declined by the client{proposal.decline_reason ? `: “${proposal.decline_reason}”` : "."}</p>

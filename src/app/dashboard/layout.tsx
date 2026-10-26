@@ -21,6 +21,12 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
   if (can(context, "proposals.read_all") || can(context, "proposals.manage") || can(context, "proposals.manage_own")) {
     items.push({ href: "/dashboard/proposals", label: "Proposals" });
   }
+  // Everyone may host calls; the page shows only meetings RLS lets them read.
+  items.push({ href: "/dashboard/meetings", label: "Meetings" });
+  if (can(context, "contracts.read")) items.push({ href: "/dashboard/contracts", label: "Agreements" });
+  if (can(context, "finance.read") || can(context, "integrations.monitor")) {
+    items.push({ href: "/dashboard/billing", label: "Billing" });
+  }
   if (can(context, "proof.read")) items.push({ href: "/dashboard/proof", label: "Proof library" });
   if (can(context, "members.read")) items.push({ href: "/dashboard/team", label: "Team" });
   if (can(context, "audit.read")) items.push({ href: "/dashboard/audit", label: "Audit log" });

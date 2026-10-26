@@ -68,3 +68,38 @@ These are the technical decisions made during implementation. Product decisions 
 - **Date:** 2026-10-25 · **Status:** accepted
 - **Context:** The hosted project can't be reset, some cases (such as expiry) can't be arranged there, and CI has no Supabase credentials.
 - **Decision:** `tests/db` applies every migration to PGlite with stand-ins for Supabase `auth` and roles, and tests RPCs, triggers and constraints. RLS and grants are still verified against real Supabase in `tests/security`.
+
+## D-012: Provider webhooks are verified in the app and applied in the database
+
+- **Date:** 2026-10-26 · **Status:** accepted
+- **Context:** PRD §9 asks webhook handlers to verify, persist idempotently and respond promptly. Signature secrets must stay server-side, and the business effects (allocation, activation) must be one transaction.
+- **Decision:** `/api/webhooks/{payments|esign}/[provider]` verifies the HMAC of the raw body with the adapter, normalizes the event and calls a service-role-only ingest RPC. The RPC deduplicates on the provider event ID (verified events only), matches order, amount, currency and merchant account, and applies effects in the same transaction. Processing is synchronous for now; the event row records the outcome so a background worker can take over later without changing the contract. Quarantined, verified events can be replayed by `billing.manage` after the cause is fixed.
+- **Consequences:** The secret key is now also used by the webhook routes and to attach provider orders (`src/server/supabase/admin.ts`).
+
+## D-013: Sandbox providers for development, guarded twice
+
+- **Date:** 2026-10-26 · **Status:** accepted
+- **Context:** The e-signature vendor is undecided and Razorpay merchant keys don't exist yet, but the flows and AT-012 to AT-020 must be exercised end to end.
+- **Decision:** Sandbox payment and e-signature adapters sign their events with `SANDBOX_WEBHOOK_SECRET` and send them through the real ingest path. They work only when `ENABLE_SANDBOX_PROVIDERS=true` (forced off when `VERCEL_ENV=production`) **and** the organization has an active `sandbox` integration account.
+- **Consequences:** Never set either in production. The sandbox signing step is an authenticated portal action; a real vendor will instead return its own signing URL from the adapter.
+
+## D-014: Internal shared booking layer with database conflict prevention
+
+- **Date:** 2026-10-26 · **Status:** accepted
+- **Context:** PRD §5.4 fixes one shared booking system with centralized conflict prevention; the scheduling provider is open.
+- **Decision:** Canonical `meetings` table with a Postgres exclusion constraint (`btree_gist`) so one host can never hold overlapping active bookings, even under concurrent requests. Availability is weekly hours per host in the host's timezone. Commercial calls route to the prospect owner if they take commercial calls, otherwise to the pool; the least-loaded free host is chosen at booking time. A losing request gets alternative slots. Callback requests are written straight to the database as tasks, so they work when booking does not (`SCHEDULING_PROVIDER=disabled` simulates an outage).
+- **Consequences:** No calendar sync yet: hosts' external calendars are not consulted. Reminder emails wait for the email provider (D-010).
+
+## D-015: Activation is evaluated per agreement until workspaces exist
+
+- **Date:** 2026-10-26 · **Status:** accepted
+- **Context:** Phase 3 needs the activation evaluator; workspaces arrive in Phase 4.
+- **Decision:** Each agreement stores its own activation policy (PRD §8 shape), chosen when it is generated. `private.evaluate_activation` reads authoritative records and appends an evaluation (eligible, blocking reasons, policy version). It runs after signature and payment events and on demand. Requiring onboarding approval always blocks until Phase 4 supplies it. Becoming eligible creates a kickoff task; losing eligibility (for example after a refund) creates a review task.
+- **Consequences:** Phase 4 attaches workspaces to this evaluator instead of re-deriving eligibility.
+
+## D-016: Invoice numbering and tax figures are placeholders pending accountant review
+
+- **Date:** 2026-10-26 · **Status:** temporary
+- **Decision:** Invoices are numbered `INV-<FY>-<seq>` per Indian financial year. The tax on each instalment is a proportional estimate of the accepted version's tax, stored in `tax_snapshot` with `review_required`. No credit notes yet: refunds and disputes are recorded as payment adjustments.
+- **Consequences:** A qualified accountant must approve numbering, GST treatment and credit-note handling before production (PRD §5.6).
+

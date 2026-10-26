@@ -1,6 +1,6 @@
 # Authorization model
 
-Source: PRD §2 and §11. This document describes what is implemented as of Phase 2.
+Source: PRD §2 and §11. This document describes what is implemented as of Phase 3.
 
 ## Layers
 
@@ -13,7 +13,7 @@ Each request passes these checks in order. No single layer is trusted on its own
 | Row Level Security | `supabase/migrations` | Every public table has RLS. Client roles only get the grants listed in the migration. Most tables are read-only from client sessions. |
 | RPC | `public.update_membership`, … | Privileged writes are `SECURITY DEFINER` functions. Each one re-checks permission, validates input, and writes the change, the audit entry and the workflow event in a single transaction. |
 
-The app's runtime uses the publishable key with the user's session for everything except one step: invitation sign-in uses the secret key (`src/server/supabase/admin.ts`) to look up the email an invitation is bound to and to provision that client's account (decision D-008). The secret key is also used by `scripts/bootstrap.ts` and the security tests.
+The app's runtime uses the publishable key with the user's session for everything except system steps, which use the secret key (`src/server/supabase/admin.ts`) as the PRD's "system worker" identity: invitation sign-in (D-008), recording provider webhooks, and attaching a provider order to a payment the client already created (D-012). Those RPCs (`ingest_payment_event`, `ingest_signature_event`, `attach_payment_order`, `fail_payment_start`, `invitation_contact`) are executable by `service_role` only. The secret key is also used by `scripts/bootstrap.ts` and the tests.
 
 ## Clients and prospects
 
@@ -21,9 +21,11 @@ Clients are never organization members, and they never read tables directly.
 
 - **With an invitation link:** a valid token is a 256-bit secret, and only its SHA-256 hash is stored. The holder can call `invitation_view`, which returns a client-safe projection of that one proposal, and `request_invitation_help`. Expired, revoked and unknown tokens return no record data.
 - **Signed in:** to accept, the holder verifies the invited email through a magic link. `redeem_invitation` then binds the token to that account (`client_access`) and only succeeds if the signed-in email matches the prospect's email. From then on, `client_proposal_view`, `accept_proposal` and `client_respond_to_proposal` check `client_access`.
+- **Sensitive actions (AT-004):** booking a call or asking for help works with the token alone. Signing (`client_prepare_signature`), paying (`client_start_payment`) and anything after acceptance need a signed-in client with `client_access`; signing also requires the signed-in email to be the named signer and the displayed document checksum to match.
+- **Phase 3 projections:** `client_meetings`, `client_contracts` / `client_contract_view`, `client_invoices` / `client_invoice_view` and `client_payment_status` return client-safe JSON. Drafts and ready-to-send agreements are invisible to clients. Staff emails and internal IDs other than the record's own are never included.
 - **Projection:** the client view (`private.client_proposal_json`) contains only the sent version's terms, line items, schedule and currently visible proof. It never includes internal notes, drafts or internal IDs beyond the proposal itself.
 
-## Roles and permissions (policy v2)
+## Roles and permissions (policy v3)
 
 Grants are stored in `role_permissions`. The application only types the keys (`src/server/authorization/permissions.ts`).
 
@@ -44,7 +46,14 @@ Grants are stored in `role_permissions`. The application only types the keys (`s
 | proof.approve | ✓ | | | |
 | pricing.read | ✓ | | | |
 | finance.read | ✓ | | | |
+| contracts.read | ✓ | | | |
 | contracts.manage | ✓ | | | |
+| contracts.templates | ✓ | | | |
+| billing.manage | ✓ | | | |
+| meetings.read_all | ✓ | ✓ | | |
+| meetings.manage | ✓ | ✓ | | |
+| scheduling.configure | | ✓ | | |
+| integrations.monitor | ✓ | ✓ | | |
 | operations.manage | | ✓ | | |
 | system.configure | | ✓ | | |
 | audit.read | ✓ | ✓ | | |
@@ -56,6 +65,8 @@ Notes:
 - Members cannot change their own role or status. Because the caller must hold `members.manage`, every organization keeps at least one manager.
 - **Sales** (policy v2) can manage only prospects and proposals they own. Sales users have no discount or approval authority, so any version with a discount, non-standard terms or a margin exception waits for a CEO approval (AT-008). No one holds this role by default.
 - **CTO/COO** sees every prospect but not proposals or pricing. This follows the PRD, which puts pricing strategy with the CEO. Granting `proposals.read_all` changes that.
+- **Phase 3 (policy v3).** Agreements, templates, invoices and payments sit with the CEO (`contracts.*`, `finance.read`, `billing.manage`). The CTO/COO sees activation evaluations (via `operations.manage`) and the provider exception queue (`integrations.monitor`, which returns no amounts or payloads), but not contract terms or invoices. Anyone may host calls: hosts see and manage their own meetings, prospect owners see meetings for their prospects, and only `scheduling.configure` changes who takes which call type.
+- **Ops tasks** are visible to their owner and to holders of the permission matching their visibility: `operations` → `operations.manage`, `commercial` → `prospects.read_all`, `finance` → `finance.read`.
 - `_own` permissions are checked against `owner_user_id` inside the RPCs and RLS helpers (`private.can_manage_prospect`, `private.can_manage_proposal`).
 
 ## Adding a protected capability

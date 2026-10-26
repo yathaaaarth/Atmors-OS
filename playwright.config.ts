@@ -20,7 +20,7 @@ export default defineConfig({
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     // Stateful journeys run once (desktop); mobile covers rendering and accessibility.
-    { name: "mobile", use: { ...devices["Pixel 7"] }, testIgnore: /proposal-journey/ },
+    { name: "mobile", use: { ...devices["Pixel 7"] }, testIgnore: /-journey/ },
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined

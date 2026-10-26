@@ -28,10 +28,48 @@ const LABELS: Record<string, string> = {
   redeemed: "Linked to account",
   revoked: "Revoked",
   preparing: "Being prepared",
+  booked: "Booked",
+  rescheduled: "Rescheduled",
+  cancelled: "Cancelled",
+  completed: "Completed",
+  no_show: "No-show",
+  ready_to_send: "Ready to send",
+  partially_signed: "Partly signed",
+  executed: "Signed",
+  voided: "Voided",
+  issued: "Due",
+  partially_paid: "Part paid",
+  paid: "Paid",
+  overdue: "Overdue",
+  disputed: "Disputed",
+  pending: "Pending",
+  succeeded: "Succeeded",
+  failed: "Failed",
+  refunded: "Refunded",
+  scheduled: "Scheduled",
+  invoiced: "Invoiced",
+  processed: "Processed",
+  duplicate: "Duplicate",
+  quarantined: "Quarantined",
+  ignored: "Ignored",
+  open: "Open",
+  done: "Done",
 };
 
-const ATTENTION = new Set(["negotiation", "internal_review", "pending_approval", "expired", "permission_requested"]);
-const NEGATIVE = new Set(["declined", "disqualified", "withdrawn", "rejected", "revoked"]);
+const ATTENTION = new Set([
+  "negotiation",
+  "internal_review",
+  "pending_approval",
+  "expired",
+  "permission_requested",
+  "partially_signed",
+  "partially_paid",
+  "pending",
+  "overdue",
+  "refunded",
+  "quarantined",
+]);
+const NEGATIVE = new Set(["declined", "disqualified", "withdrawn", "rejected", "revoked", "voided", "cancelled", "failed", "no_show", "disputed"]);
 
 /** Status is always shown as text; colour only reinforces it (PRD §12). */
 export function StatusBadge({ status }: { status: string }) {

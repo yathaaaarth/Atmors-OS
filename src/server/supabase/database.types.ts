@@ -15,6 +15,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      activation_evaluations: {
+        Row: {
+          blocking_reasons: string[]
+          contract_id: string
+          correlation_id: string
+          eligible: boolean
+          evaluated_at: string
+          id: string
+          organization_id: string
+          policy: Json
+          policy_version: number
+          source: string
+        }
+        Insert: {
+          blocking_reasons?: string[]
+          contract_id: string
+          correlation_id: string
+          eligible: boolean
+          evaluated_at?: string
+          id?: string
+          organization_id: string
+          policy: Json
+          policy_version: number
+          source: string
+        }
+        Update: {
+          blocking_reasons?: string[]
+          contract_id?: string
+          correlation_id?: string
+          eligible?: boolean
+          evaluated_at?: string
+          id?: string
+          organization_id?: string
+          policy?: Json
+          policy_version?: number
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activation_evaluations_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activation_evaluations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -65,6 +119,63 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_hosts: {
+        Row: {
+          active: boolean
+          created_at: string
+          horizon_days: number
+          min_notice_hours: number
+          organization_id: string
+          purposes: Database["public"]["Enums"]["meeting_purpose"][]
+          slot_minutes: number
+          timezone: string
+          updated_at: string
+          user_id: string
+          weekly_hours: Json
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          horizon_days?: number
+          min_notice_hours?: number
+          organization_id: string
+          purposes?: Database["public"]["Enums"]["meeting_purpose"][]
+          slot_minutes?: number
+          timezone?: string
+          updated_at?: string
+          user_id: string
+          weekly_hours?: Json
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          horizon_days?: number
+          min_notice_hours?: number
+          organization_id?: string
+          purposes?: Database["public"]["Enums"]["meeting_purpose"][]
+          slot_minutes?: number
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+          weekly_hours?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_hosts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_hosts_organization_id_user_id_fkey"
+            columns: ["organization_id", "user_id"]
+            isOneToOne: true
+            referencedRelation: "organization_memberships"
+            referencedColumns: ["organization_id", "user_id"]
           },
         ]
       }
@@ -119,6 +230,377 @@ export type Database = {
             columns: ["prospect_id"]
             isOneToOne: false
             referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_signers: {
+        Row: {
+          contract_id: string
+          email: string
+          evidence: Json
+          id: string
+          name: string
+          organization_id: string
+          position: number
+          role: string
+          signed_at: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          contract_id: string
+          email: string
+          evidence?: Json
+          id?: string
+          name: string
+          organization_id: string
+          position: number
+          role: string
+          signed_at?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          contract_id?: string
+          email?: string
+          evidence?: Json
+          id?: string
+          name?: string
+          organization_id?: string
+          position?: number
+          role?: string
+          signed_at?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_signers_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_signers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_signers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_templates: {
+        Row: {
+          active: boolean
+          approved_at: string | null
+          approved_by: string | null
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          jurisdiction_review_status: string
+          key: string
+          name: string
+          organization_id: string
+          review_note: string | null
+          template_hash: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          active?: boolean
+          approved_at?: string | null
+          approved_by?: string | null
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          jurisdiction_review_status?: string
+          key: string
+          name: string
+          organization_id: string
+          review_note?: string | null
+          template_hash: string
+          updated_at?: string
+          version: number
+        }
+        Update: {
+          active?: boolean
+          approved_at?: string | null
+          approved_by?: string | null
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          jurisdiction_review_status?: string
+          key?: string
+          name?: string
+          organization_id?: string
+          review_note?: string | null
+          template_hash?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_templates_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contracts: {
+        Row: {
+          activation_eligible: boolean
+          activation_policy: Json | null
+          activation_policy_version: number
+          activation_reviewed_at: string | null
+          activation_reviewed_by: string | null
+          amendment_reason: string | null
+          amendment_text: string | null
+          checksum: string
+          client_address: string
+          client_legal_name: string
+          client_tax_id: string | null
+          countersigner_user_id: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          declined_at: string | null
+          eligible_at: string | null
+          executed_at: string | null
+          first_viewed_at: string | null
+          id: string
+          organization_id: string
+          proposal_id: string
+          proposal_version_id: string
+          prospect_id: string
+          provider: string | null
+          provider_document_id: string | null
+          rendered_document: string
+          sent_at: string | null
+          signer_email: string
+          signer_name: string
+          status: Database["public"]["Enums"]["contract_status"]
+          supersedes_contract_id: string | null
+          template_hash: string
+          template_id: string
+          template_version: number
+          title: string
+          total_minor: number
+          updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+        }
+        Insert: {
+          activation_eligible?: boolean
+          activation_policy?: Json | null
+          activation_policy_version?: number
+          activation_reviewed_at?: string | null
+          activation_reviewed_by?: string | null
+          amendment_reason?: string | null
+          amendment_text?: string | null
+          checksum: string
+          client_address: string
+          client_legal_name: string
+          client_tax_id?: string | null
+          countersigner_user_id: string
+          created_at?: string
+          created_by?: string | null
+          currency: string
+          declined_at?: string | null
+          eligible_at?: string | null
+          executed_at?: string | null
+          first_viewed_at?: string | null
+          id?: string
+          organization_id: string
+          proposal_id: string
+          proposal_version_id: string
+          prospect_id: string
+          provider?: string | null
+          provider_document_id?: string | null
+          rendered_document: string
+          sent_at?: string | null
+          signer_email: string
+          signer_name: string
+          status?: Database["public"]["Enums"]["contract_status"]
+          supersedes_contract_id?: string | null
+          template_hash: string
+          template_id: string
+          template_version: number
+          title: string
+          total_minor: number
+          updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Update: {
+          activation_eligible?: boolean
+          activation_policy?: Json | null
+          activation_policy_version?: number
+          activation_reviewed_at?: string | null
+          activation_reviewed_by?: string | null
+          amendment_reason?: string | null
+          amendment_text?: string | null
+          checksum?: string
+          client_address?: string
+          client_legal_name?: string
+          client_tax_id?: string | null
+          countersigner_user_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          declined_at?: string | null
+          eligible_at?: string | null
+          executed_at?: string | null
+          first_viewed_at?: string | null
+          id?: string
+          organization_id?: string
+          proposal_id?: string
+          proposal_version_id?: string
+          prospect_id?: string
+          provider?: string | null
+          provider_document_id?: string | null
+          rendered_document?: string
+          sent_at?: string | null
+          signer_email?: string
+          signer_name?: string
+          status?: Database["public"]["Enums"]["contract_status"]
+          supersedes_contract_id?: string | null
+          template_hash?: string
+          template_id?: string
+          template_version?: number
+          title?: string
+          total_minor?: number
+          updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contracts_activation_reviewed_by_fkey"
+            columns: ["activation_reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_organization_id_countersigner_user_id_fkey"
+            columns: ["organization_id", "countersigner_user_id"]
+            isOneToOne: false
+            referencedRelation: "organization_memberships"
+            referencedColumns: ["organization_id", "user_id"]
+          },
+          {
+            foreignKeyName: "contracts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_proposal_version_id_fkey"
+            columns: ["proposal_version_id"]
+            isOneToOne: false
+            referencedRelation: "proposal_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_supersedes_contract_id_fkey"
+            columns: ["supersedes_contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contracts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "contract_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_accounts: {
+        Row: {
+          account_id: string
+          active: boolean
+          created_at: string
+          kind: string
+          organization_id: string
+          provider: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          active?: boolean
+          created_at?: string
+          kind: string
+          organization_id: string
+          provider: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          active?: boolean
+          created_at?: string
+          kind?: string
+          organization_id?: string
+          provider?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_accounts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -215,6 +697,377 @@ export type Database = {
             columns: ["replaced_by"]
             isOneToOne: false
             referencedRelation: "invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_counters: {
+        Row: {
+          fiscal_year: string
+          last_number: number
+          organization_id: string
+        }
+        Insert: {
+          fiscal_year: string
+          last_number?: number
+          organization_id: string
+        }
+        Update: {
+          fiscal_year?: string
+          last_number?: number
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_counters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          allow_partial: boolean
+          balance_minor: number
+          contract_id: string
+          created_at: string
+          currency: string
+          due_at: string | null
+          id: string
+          invoice_number: string | null
+          issued_at: string | null
+          label: string
+          organization_id: string
+          paid_minor: number
+          prospect_id: string
+          schedule_item_id: string
+          status: Database["public"]["Enums"]["invoice_status"]
+          tax_snapshot: Json
+          total_minor: number
+          updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+        }
+        Insert: {
+          allow_partial?: boolean
+          balance_minor: number
+          contract_id: string
+          created_at?: string
+          currency: string
+          due_at?: string | null
+          id?: string
+          invoice_number?: string | null
+          issued_at?: string | null
+          label: string
+          organization_id: string
+          paid_minor?: number
+          prospect_id: string
+          schedule_item_id: string
+          status?: Database["public"]["Enums"]["invoice_status"]
+          tax_snapshot?: Json
+          total_minor: number
+          updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Update: {
+          allow_partial?: boolean
+          balance_minor?: number
+          contract_id?: string
+          created_at?: string
+          currency?: string
+          due_at?: string | null
+          id?: string
+          invoice_number?: string | null
+          issued_at?: string | null
+          label?: string
+          organization_id?: string
+          paid_minor?: number
+          prospect_id?: string
+          schedule_item_id?: string
+          status?: Database["public"]["Enums"]["invoice_status"]
+          tax_snapshot?: Json
+          total_minor?: number
+          updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_schedule_item_id_fkey"
+            columns: ["schedule_item_id"]
+            isOneToOne: false
+            referencedRelation: "payment_schedule_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_events: {
+        Row: {
+          actor_id: string | null
+          actor_type: Database["public"]["Enums"]["actor_type"]
+          correlation_id: string
+          event_type: string
+          id: string
+          meeting_id: string
+          metadata: Json
+          occurred_at: string
+          organization_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type: Database["public"]["Enums"]["actor_type"]
+          correlation_id: string
+          event_type: string
+          id?: string
+          meeting_id: string
+          metadata?: Json
+          occurred_at?: string
+          organization_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: Database["public"]["Enums"]["actor_type"]
+          correlation_id?: string
+          event_type?: string
+          id?: string
+          meeting_id?: string
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_events_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetings: {
+        Row: {
+          attendee_note: string | null
+          booked_by: string | null
+          booked_by_type: Database["public"]["Enums"]["actor_type"]
+          cancel_reason: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          end_at: string
+          host_user_id: string
+          id: string
+          idempotency_key: string
+          organization_id: string
+          proposal_id: string | null
+          prospect_id: string
+          provider: string
+          provider_booking_id: string | null
+          purpose: Database["public"]["Enums"]["meeting_purpose"]
+          rescheduled_count: number
+          start_at: string
+          status: Database["public"]["Enums"]["meeting_status"]
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          attendee_note?: string | null
+          booked_by?: string | null
+          booked_by_type: Database["public"]["Enums"]["actor_type"]
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          end_at: string
+          host_user_id: string
+          id?: string
+          idempotency_key: string
+          organization_id: string
+          proposal_id?: string | null
+          prospect_id: string
+          provider?: string
+          provider_booking_id?: string | null
+          purpose: Database["public"]["Enums"]["meeting_purpose"]
+          rescheduled_count?: number
+          start_at: string
+          status?: Database["public"]["Enums"]["meeting_status"]
+          timezone: string
+          updated_at?: string
+        }
+        Update: {
+          attendee_note?: string | null
+          booked_by?: string | null
+          booked_by_type?: Database["public"]["Enums"]["actor_type"]
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          end_at?: string
+          host_user_id?: string
+          id?: string
+          idempotency_key?: string
+          organization_id?: string
+          proposal_id?: string | null
+          prospect_id?: string
+          provider?: string
+          provider_booking_id?: string | null
+          purpose?: Database["public"]["Enums"]["meeting_purpose"]
+          rescheduled_count?: number
+          start_at?: string
+          status?: Database["public"]["Enums"]["meeting_status"]
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetings_organization_id_host_user_id_fkey"
+            columns: ["organization_id", "host_user_id"]
+            isOneToOne: false
+            referencedRelation: "organization_memberships"
+            referencedColumns: ["organization_id", "user_id"]
+          },
+          {
+            foreignKeyName: "meetings_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetings_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ops_tasks: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          dedupe_key: string | null
+          detail: string | null
+          due_at: string
+          id: string
+          kind: string
+          organization_id: string
+          owner_user_id: string | null
+          prospect_id: string | null
+          related_id: string | null
+          related_type: string | null
+          resolution: string | null
+          status: Database["public"]["Enums"]["ops_task_status"]
+          title: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          detail?: string | null
+          due_at?: string
+          id?: string
+          kind: string
+          organization_id: string
+          owner_user_id?: string | null
+          prospect_id?: string | null
+          related_id?: string | null
+          related_type?: string | null
+          resolution?: string | null
+          status?: Database["public"]["Enums"]["ops_task_status"]
+          title: string
+          updated_at?: string
+          visibility: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          dedupe_key?: string | null
+          detail?: string | null
+          due_at?: string
+          id?: string
+          kind?: string
+          organization_id?: string
+          owner_user_id?: string | null
+          prospect_id?: string | null
+          related_id?: string | null
+          related_type?: string | null
+          resolution?: string | null
+          status?: Database["public"]["Enums"]["ops_task_status"]
+          title?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ops_tasks_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ops_tasks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ops_tasks_owner_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ops_tasks_prospect_id_fkey"
+            columns: ["prospect_id"]
+            isOneToOne: false
+            referencedRelation: "prospects"
             referencedColumns: ["id"]
           },
         ]
@@ -351,6 +1204,290 @@ export type Database = {
             columns: ["prospect_id"]
             isOneToOne: false
             referencedRelation: "prospects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_adjustments: {
+        Row: {
+          amount_minor: number
+          id: string
+          kind: string
+          occurred_at: string
+          organization_id: string
+          payment_event_id: string | null
+          payment_id: string
+          provider_ref: string
+        }
+        Insert: {
+          amount_minor: number
+          id?: string
+          kind: string
+          occurred_at?: string
+          organization_id: string
+          payment_event_id?: string | null
+          payment_id: string
+          provider_ref: string
+        }
+        Update: {
+          amount_minor?: number
+          id?: string
+          kind?: string
+          occurred_at?: string
+          organization_id?: string
+          payment_event_id?: string | null
+          payment_id?: string
+          provider_ref?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_adjustments_event_fkey"
+            columns: ["payment_event_id"]
+            isOneToOne: false
+            referencedRelation: "payment_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_adjustments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_adjustments_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_events: {
+        Row: {
+          correlation_id: string
+          data: Json
+          error_code: string | null
+          event_type: string
+          id: string
+          invoice_id: string | null
+          organization_id: string | null
+          payload_hash: string
+          payment_id: string | null
+          processed_at: string | null
+          processing_status: string
+          provider: string
+          provider_event_id: string
+          received_at: string
+          signature_verified: boolean
+        }
+        Insert: {
+          correlation_id: string
+          data?: Json
+          error_code?: string | null
+          event_type: string
+          id?: string
+          invoice_id?: string | null
+          organization_id?: string | null
+          payload_hash: string
+          payment_id?: string | null
+          processed_at?: string | null
+          processing_status?: string
+          provider: string
+          provider_event_id: string
+          received_at?: string
+          signature_verified: boolean
+        }
+        Update: {
+          correlation_id?: string
+          data?: Json
+          error_code?: string | null
+          event_type?: string
+          id?: string
+          invoice_id?: string | null
+          organization_id?: string | null
+          payload_hash?: string
+          payment_id?: string | null
+          processed_at?: string | null
+          processing_status?: string
+          provider?: string
+          provider_event_id?: string
+          received_at?: string
+          signature_verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_events_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_events_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_schedule_items: {
+        Row: {
+          activation_relevant: boolean
+          amount_minor: number
+          contract_id: string
+          created_at: string
+          currency: string
+          due_date: string | null
+          due_rule: string
+          id: string
+          label: string
+          milestone: string | null
+          organization_id: string
+          position: number
+          schedule_version: number
+          status: string
+        }
+        Insert: {
+          activation_relevant?: boolean
+          amount_minor: number
+          contract_id: string
+          created_at?: string
+          currency: string
+          due_date?: string | null
+          due_rule: string
+          id?: string
+          label: string
+          milestone?: string | null
+          organization_id: string
+          position: number
+          schedule_version?: number
+          status?: string
+        }
+        Update: {
+          activation_relevant?: boolean
+          amount_minor?: number
+          contract_id?: string
+          created_at?: string
+          currency?: string
+          due_date?: string | null
+          due_rule?: string
+          id?: string
+          label?: string
+          milestone?: string | null
+          organization_id?: string
+          position?: number
+          schedule_version?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_schedule_items_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_schedule_items_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount_minor: number
+          created_at: string
+          currency: string
+          disputed_minor: number
+          failed_at: string | null
+          failure_code: string | null
+          id: string
+          idempotency_key: string
+          initiated_by: string | null
+          invoice_id: string
+          manual: boolean
+          manual_reason: string | null
+          manual_reference: string | null
+          organization_id: string
+          provider: string
+          provider_order_id: string | null
+          provider_payment_id: string | null
+          refunded_minor: number
+          status: Database["public"]["Enums"]["payment_status"]
+          succeeded_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_minor: number
+          created_at?: string
+          currency: string
+          disputed_minor?: number
+          failed_at?: string | null
+          failure_code?: string | null
+          id?: string
+          idempotency_key: string
+          initiated_by?: string | null
+          invoice_id: string
+          manual?: boolean
+          manual_reason?: string | null
+          manual_reference?: string | null
+          organization_id: string
+          provider: string
+          provider_order_id?: string | null
+          provider_payment_id?: string | null
+          refunded_minor?: number
+          status?: Database["public"]["Enums"]["payment_status"]
+          succeeded_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_minor?: number
+          created_at?: string
+          currency?: string
+          disputed_minor?: number
+          failed_at?: string | null
+          failure_code?: string | null
+          id?: string
+          idempotency_key?: string
+          initiated_by?: string | null
+          invoice_id?: string
+          manual?: boolean
+          manual_reason?: string | null
+          manual_reference?: string | null
+          organization_id?: string
+          provider?: string
+          provider_order_id?: string | null
+          provider_payment_id?: string | null
+          refunded_minor?: number
+          status?: Database["public"]["Enums"]["payment_status"]
+          succeeded_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1041,6 +2178,78 @@ export type Database = {
         }
         Relationships: []
       }
+      signature_events: {
+        Row: {
+          contract_id: string | null
+          correlation_id: string
+          data: Json
+          error_code: string | null
+          event_type: string
+          id: string
+          occurred_at: string | null
+          organization_id: string | null
+          payload_hash: string
+          processed_at: string | null
+          processing_status: string
+          provider: string
+          provider_document_id: string | null
+          provider_event_id: string
+          received_at: string
+          signature_verified: boolean
+        }
+        Insert: {
+          contract_id?: string | null
+          correlation_id: string
+          data?: Json
+          error_code?: string | null
+          event_type: string
+          id?: string
+          occurred_at?: string | null
+          organization_id?: string | null
+          payload_hash: string
+          processed_at?: string | null
+          processing_status?: string
+          provider: string
+          provider_document_id?: string | null
+          provider_event_id: string
+          received_at?: string
+          signature_verified: boolean
+        }
+        Update: {
+          contract_id?: string | null
+          correlation_id?: string
+          data?: Json
+          error_code?: string | null
+          event_type?: string
+          id?: string
+          occurred_at?: string | null
+          organization_id?: string | null
+          payload_hash?: string
+          processed_at?: string | null
+          processing_status?: string
+          provider?: string
+          provider_document_id?: string | null
+          provider_event_id?: string
+          received_at?: string
+          signature_verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signature_events_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signature_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workflow_events: {
         Row: {
           aggregate_id: string
@@ -1126,8 +2335,116 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      attach_payment_order: {
+        Args: { p_payment_id: string; p_provider_order_id: string }
+        Returns: {
+          amount_minor: number
+          created_at: string
+          currency: string
+          disputed_minor: number
+          failed_at: string | null
+          failure_code: string | null
+          id: string
+          idempotency_key: string
+          initiated_by: string | null
+          invoice_id: string
+          manual: boolean
+          manual_reason: string | null
+          manual_reference: string | null
+          organization_id: string
+          provider: string
+          provider_order_id: string | null
+          provider_payment_id: string | null
+          refunded_minor: number
+          status: Database["public"]["Enums"]["payment_status"]
+          succeeded_at: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "payments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      book_meeting_with_token: {
+        Args: {
+          p_correlation_id?: string
+          p_idempotency_key?: string
+          p_note?: string
+          p_purpose: Database["public"]["Enums"]["meeting_purpose"]
+          p_start: string
+          p_timezone: string
+          p_token_hash: string
+        }
+        Returns: Json
+      }
+      booking_options_with_token: {
+        Args: {
+          p_from: string
+          p_purpose: Database["public"]["Enums"]["meeting_purpose"]
+          p_to: string
+          p_token_hash: string
+        }
+        Returns: Json
+      }
+      client_book_meeting: {
+        Args: {
+          p_correlation_id?: string
+          p_idempotency_key?: string
+          p_note?: string
+          p_prospect_id: string
+          p_purpose: Database["public"]["Enums"]["meeting_purpose"]
+          p_start: string
+          p_timezone: string
+        }
+        Returns: Json
+      }
+      client_booking_options: {
+        Args: {
+          p_from: string
+          p_prospect_id: string
+          p_purpose: Database["public"]["Enums"]["meeting_purpose"]
+          p_to: string
+        }
+        Returns: Json
+      }
+      client_change_meeting: {
+        Args: {
+          p_action: string
+          p_correlation_id?: string
+          p_meeting_id: string
+          p_reason?: string
+          p_start?: string
+        }
+        Returns: Json
+      }
+      client_contract_view: { Args: { p_contract_id: string }; Returns: Json }
+      client_contracts: { Args: never; Returns: Json }
+      client_invoice_view: { Args: { p_invoice_id: string }; Returns: Json }
+      client_invoices: { Args: never; Returns: Json }
+      client_meetings: { Args: never; Returns: Json }
+      client_payment_status: { Args: { p_payment_id: string }; Returns: Json }
+      client_prepare_signature: {
+        Args: {
+          p_checksum: string
+          p_contract_id: string
+          p_correlation_id?: string
+        }
+        Returns: Json
+      }
       client_proposal_view: { Args: { p_proposal_id: string }; Returns: Json }
       client_proposals: { Args: never; Returns: Json }
+      client_request_callback: {
+        Args: {
+          p_correlation_id?: string
+          p_idempotency_key?: string
+          p_message?: string
+          p_prospect_id: string
+          p_purpose: Database["public"]["Enums"]["meeting_purpose"]
+        }
+        Returns: undefined
+      }
       client_respond_to_proposal: {
         Args: {
           p_correlation_id?: string
@@ -1160,6 +2477,131 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "proposals"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      client_start_payment: {
+        Args: {
+          p_amount_minor?: number
+          p_correlation_id?: string
+          p_idempotency_key?: string
+          p_invoice_id: string
+          p_provider: string
+        }
+        Returns: Json
+      }
+      complete_ops_task: {
+        Args: {
+          p_correlation_id?: string
+          p_outcome: string
+          p_resolution?: string
+          p_task_id: string
+        }
+        Returns: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          dedupe_key: string | null
+          detail: string | null
+          due_at: string
+          id: string
+          kind: string
+          organization_id: string
+          owner_user_id: string | null
+          prospect_id: string | null
+          related_id: string | null
+          related_type: string | null
+          resolution: string | null
+          status: Database["public"]["Enums"]["ops_task_status"]
+          title: string
+          updated_at: string
+          visibility: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "ops_tasks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      configure_integration_account: {
+        Args: {
+          p_account_id: string
+          p_active: boolean
+          p_correlation_id?: string
+          p_kind: string
+          p_organization_id: string
+          p_provider: string
+        }
+        Returns: {
+          account_id: string
+          active: boolean
+          created_at: string
+          kind: string
+          organization_id: string
+          provider: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "integration_accounts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_contract_amendment: {
+        Args: {
+          p_amendment_text: string
+          p_contract_id: string
+          p_correlation_id?: string
+          p_reason: string
+        }
+        Returns: {
+          activation_eligible: boolean
+          activation_policy: Json | null
+          activation_policy_version: number
+          activation_reviewed_at: string | null
+          activation_reviewed_by: string | null
+          amendment_reason: string | null
+          amendment_text: string | null
+          checksum: string
+          client_address: string
+          client_legal_name: string
+          client_tax_id: string | null
+          countersigner_user_id: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          declined_at: string | null
+          eligible_at: string | null
+          executed_at: string | null
+          first_viewed_at: string | null
+          id: string
+          organization_id: string
+          proposal_id: string
+          proposal_version_id: string
+          prospect_id: string
+          provider: string | null
+          provider_document_id: string | null
+          rendered_document: string
+          sent_at: string | null
+          signer_email: string
+          signer_name: string
+          status: Database["public"]["Enums"]["contract_status"]
+          supersedes_contract_id: string | null
+          template_hash: string
+          template_id: string
+          template_version: number
+          title: string
+          total_minor: number
+          updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "contracts"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -1294,8 +2736,168 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      evaluate_contract_activation: {
+        Args: { p_contract_id: string; p_correlation_id?: string }
+        Returns: Json
+      }
+      fail_payment_start: {
+        Args: { p_error_code: string; p_payment_id: string }
+        Returns: {
+          amount_minor: number
+          created_at: string
+          currency: string
+          disputed_minor: number
+          failed_at: string | null
+          failure_code: string | null
+          id: string
+          idempotency_key: string
+          initiated_by: string | null
+          invoice_id: string
+          manual: boolean
+          manual_reason: string | null
+          manual_reference: string | null
+          organization_id: string
+          provider: string
+          provider_order_id: string | null
+          provider_payment_id: string | null
+          refunded_minor: number
+          status: Database["public"]["Enums"]["payment_status"]
+          succeeded_at: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "payments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      generate_contract: {
+        Args: {
+          p_activation_policy?: Json
+          p_correlation_id?: string
+          p_countersigner_user_id: string
+          p_legal: Json
+          p_proposal_id: string
+          p_template_id: string
+        }
+        Returns: {
+          activation_eligible: boolean
+          activation_policy: Json | null
+          activation_policy_version: number
+          activation_reviewed_at: string | null
+          activation_reviewed_by: string | null
+          amendment_reason: string | null
+          amendment_text: string | null
+          checksum: string
+          client_address: string
+          client_legal_name: string
+          client_tax_id: string | null
+          countersigner_user_id: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          declined_at: string | null
+          eligible_at: string | null
+          executed_at: string | null
+          first_viewed_at: string | null
+          id: string
+          organization_id: string
+          proposal_id: string
+          proposal_version_id: string
+          prospect_id: string
+          provider: string | null
+          provider_document_id: string | null
+          rendered_document: string
+          sent_at: string | null
+          signer_email: string
+          signer_name: string
+          status: Database["public"]["Enums"]["contract_status"]
+          supersedes_contract_id: string | null
+          template_hash: string
+          template_id: string
+          template_version: number
+          title: string
+          total_minor: number
+          updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "contracts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      ingest_payment_event: {
+        Args: {
+          p_correlation_id: string
+          p_data: Json
+          p_event_type: string
+          p_payload_hash: string
+          p_provider: string
+          p_provider_event_id: string
+          p_signature_verified: boolean
+        }
+        Returns: Json
+      }
+      ingest_signature_event: {
+        Args: {
+          p_correlation_id: string
+          p_data: Json
+          p_event_type: string
+          p_occurred_at: string
+          p_payload_hash: string
+          p_provider: string
+          p_provider_document_id: string
+          p_provider_event_id: string
+          p_signature_verified: boolean
+        }
+        Returns: Json
+      }
+      integration_exceptions: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
       invitation_contact: { Args: { p_token_hash: string }; Returns: string }
       invitation_view: { Args: { p_token_hash: string }; Returns: Json }
+      issue_invoice_for_item: {
+        Args: {
+          p_allow_partial?: boolean
+          p_correlation_id?: string
+          p_due_in_days?: number
+          p_item_id: string
+        }
+        Returns: {
+          allow_partial: boolean
+          balance_minor: number
+          contract_id: string
+          created_at: string
+          currency: string
+          due_at: string | null
+          id: string
+          invoice_number: string | null
+          issued_at: string | null
+          label: string
+          organization_id: string
+          paid_minor: number
+          prospect_id: string
+          schedule_item_id: string
+          status: Database["public"]["Enums"]["invoice_status"]
+          tax_snapshot: Json
+          total_minor: number
+          updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invoices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       log_outreach: {
         Args: {
           p_channel: string
@@ -1361,6 +2963,116 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      prepare_countersignature: {
+        Args: {
+          p_checksum: string
+          p_contract_id: string
+          p_correlation_id?: string
+        }
+        Returns: Json
+      }
+      record_activation_review: {
+        Args: {
+          p_contract_id: string
+          p_correlation_id?: string
+          p_note: string
+        }
+        Returns: Json
+      }
+      record_contract_sent: {
+        Args: {
+          p_contract_id: string
+          p_correlation_id?: string
+          p_provider: string
+          p_provider_document_id: string
+        }
+        Returns: {
+          activation_eligible: boolean
+          activation_policy: Json | null
+          activation_policy_version: number
+          activation_reviewed_at: string | null
+          activation_reviewed_by: string | null
+          amendment_reason: string | null
+          amendment_text: string | null
+          checksum: string
+          client_address: string
+          client_legal_name: string
+          client_tax_id: string | null
+          countersigner_user_id: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          declined_at: string | null
+          eligible_at: string | null
+          executed_at: string | null
+          first_viewed_at: string | null
+          id: string
+          organization_id: string
+          proposal_id: string
+          proposal_version_id: string
+          prospect_id: string
+          provider: string | null
+          provider_document_id: string | null
+          rendered_document: string
+          sent_at: string | null
+          signer_email: string
+          signer_name: string
+          status: Database["public"]["Enums"]["contract_status"]
+          supersedes_contract_id: string | null
+          template_hash: string
+          template_id: string
+          template_version: number
+          title: string
+          total_minor: number
+          updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "contracts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      record_manual_payment: {
+        Args: {
+          p_amount_minor: number
+          p_correlation_id?: string
+          p_invoice_id: string
+          p_reason: string
+          p_reference: string
+        }
+        Returns: {
+          amount_minor: number
+          created_at: string
+          currency: string
+          disputed_minor: number
+          failed_at: string | null
+          failure_code: string | null
+          id: string
+          idempotency_key: string
+          initiated_by: string | null
+          invoice_id: string
+          manual: boolean
+          manual_reason: string | null
+          manual_reference: string | null
+          organization_id: string
+          provider: string
+          provider_order_id: string | null
+          provider_payment_id: string | null
+          refunded_minor: number
+          status: Database["public"]["Enums"]["payment_status"]
+          succeeded_at: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "payments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       redeem_invitation: {
         Args: { p_correlation_id?: string; p_token_hash: string }
         Returns: string
@@ -1374,6 +3086,20 @@ export type Database = {
           p_reason?: string
         }
         Returns: string
+      }
+      reprocess_payment_event: {
+        Args: { p_correlation_id?: string; p_event_id: string }
+        Returns: string
+      }
+      request_callback_with_token: {
+        Args: {
+          p_correlation_id?: string
+          p_idempotency_key?: string
+          p_message?: string
+          p_purpose: Database["public"]["Enums"]["meeting_purpose"]
+          p_token_hash: string
+        }
+        Returns: undefined
       }
       request_invitation_help: {
         Args: {
@@ -1424,6 +3150,75 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "proposal_versions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      run_billing_checks: {
+        Args: { p_correlation_id?: string; p_organization_id: string }
+        Returns: Json
+      }
+      save_booking_host: {
+        Args: {
+          p_active?: boolean
+          p_correlation_id?: string
+          p_horizon_days?: number
+          p_min_notice_hours?: number
+          p_organization_id: string
+          p_purposes: Database["public"]["Enums"]["meeting_purpose"][]
+          p_slot_minutes?: number
+          p_timezone: string
+          p_user_id: string
+          p_weekly_hours: Json
+        }
+        Returns: {
+          active: boolean
+          created_at: string
+          horizon_days: number
+          min_notice_hours: number
+          organization_id: string
+          purposes: Database["public"]["Enums"]["meeting_purpose"][]
+          slot_minutes: number
+          timezone: string
+          updated_at: string
+          user_id: string
+          weekly_hours: Json
+        }
+        SetofOptions: {
+          from: "*"
+          to: "booking_hosts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      save_contract_template: {
+        Args: {
+          p_body: string
+          p_correlation_id?: string
+          p_key: string
+          p_name: string
+          p_organization_id: string
+        }
+        Returns: {
+          active: boolean
+          approved_at: string | null
+          approved_by: string | null
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          jurisdiction_review_status: string
+          key: string
+          name: string
+          organization_id: string
+          review_note: string | null
+          template_hash: string
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "contract_templates"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -1551,6 +3346,38 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_contract_template_state: {
+        Args: {
+          p_active: boolean
+          p_correlation_id?: string
+          p_note?: string
+          p_review_status: string
+          p_template_id: string
+        }
+        Returns: {
+          active: boolean
+          approved_at: string | null
+          approved_by: string | null
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          jurisdiction_review_status: string
+          key: string
+          name: string
+          organization_id: string
+          review_note: string | null
+          template_hash: string
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "contract_templates"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       submit_proposal_version: {
         Args: { p_correlation_id?: string; p_version_id: string }
         Returns: {
@@ -1586,6 +3413,62 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "proposal_versions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      transition_contract: {
+        Args: {
+          p_action: string
+          p_contract_id: string
+          p_correlation_id?: string
+          p_reason?: string
+        }
+        Returns: {
+          activation_eligible: boolean
+          activation_policy: Json | null
+          activation_policy_version: number
+          activation_reviewed_at: string | null
+          activation_reviewed_by: string | null
+          amendment_reason: string | null
+          amendment_text: string | null
+          checksum: string
+          client_address: string
+          client_legal_name: string
+          client_tax_id: string | null
+          countersigner_user_id: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          declined_at: string | null
+          eligible_at: string | null
+          executed_at: string | null
+          first_viewed_at: string | null
+          id: string
+          organization_id: string
+          proposal_id: string
+          proposal_version_id: string
+          prospect_id: string
+          provider: string | null
+          provider_document_id: string | null
+          rendered_document: string
+          sent_at: string | null
+          signer_email: string
+          signer_name: string
+          status: Database["public"]["Enums"]["contract_status"]
+          supersedes_contract_id: string | null
+          template_hash: string
+          template_id: string
+          template_version: number
+          title: string
+          total_minor: number
+          updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "contracts"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -1663,6 +3546,16 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      update_meeting: {
+        Args: {
+          p_action: string
+          p_correlation_id?: string
+          p_meeting_id: string
+          p_reason?: string
+          p_start?: string
+        }
+        Returns: Json
+      }
       update_membership: {
         Args: {
           p_correlation_id?: string
@@ -1719,6 +3612,41 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      void_invoice: {
+        Args: {
+          p_correlation_id?: string
+          p_invoice_id: string
+          p_reason: string
+        }
+        Returns: {
+          allow_partial: boolean
+          balance_minor: number
+          contract_id: string
+          created_at: string
+          currency: string
+          due_at: string | null
+          id: string
+          invoice_number: string | null
+          issued_at: string | null
+          label: string
+          organization_id: string
+          paid_minor: number
+          prospect_id: string
+          schedule_item_id: string
+          status: Database["public"]["Enums"]["invoice_status"]
+          tax_snapshot: Json
+          total_minor: number
+          updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invoices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       withdraw_proposal: {
         Args: {
           p_correlation_id?: string
@@ -1758,8 +3686,43 @@ export type Database = {
     Enums: {
       actor_type: "user" | "client" | "system"
       client_access_status: "active" | "revoked"
+      contract_status:
+        | "draft"
+        | "ready_to_send"
+        | "sent"
+        | "viewed"
+        | "partially_signed"
+        | "executed"
+        | "declined"
+        | "voided"
+        | "expired"
+      invoice_status:
+        | "draft"
+        | "issued"
+        | "partially_paid"
+        | "paid"
+        | "overdue"
+        | "voided"
+        | "disputed"
+      meeting_purpose: "commercial" | "onboarding" | "delivery"
+      meeting_status:
+        | "requested"
+        | "booked"
+        | "rescheduled"
+        | "cancelled"
+        | "completed"
+        | "no_show"
       member_role: "ceo" | "cto_coo" | "delivery" | "sales"
       member_status: "invited" | "active" | "suspended" | "revoked"
+      ops_task_status: "open" | "done" | "cancelled"
+      payment_status:
+        | "created"
+        | "pending"
+        | "succeeded"
+        | "failed"
+        | "cancelled"
+        | "refunded"
+        | "disputed"
       profile_status: "active" | "disabled"
       proof_kind: "testimonial" | "case_study"
       proof_publication_status:
@@ -1925,8 +3888,47 @@ export const Constants = {
     Enums: {
       actor_type: ["user", "client", "system"],
       client_access_status: ["active", "revoked"],
+      contract_status: [
+        "draft",
+        "ready_to_send",
+        "sent",
+        "viewed",
+        "partially_signed",
+        "executed",
+        "declined",
+        "voided",
+        "expired",
+      ],
+      invoice_status: [
+        "draft",
+        "issued",
+        "partially_paid",
+        "paid",
+        "overdue",
+        "voided",
+        "disputed",
+      ],
+      meeting_purpose: ["commercial", "onboarding", "delivery"],
+      meeting_status: [
+        "requested",
+        "booked",
+        "rescheduled",
+        "cancelled",
+        "completed",
+        "no_show",
+      ],
       member_role: ["ceo", "cto_coo", "delivery", "sales"],
       member_status: ["invited", "active", "suspended", "revoked"],
+      ops_task_status: ["open", "done", "cancelled"],
+      payment_status: [
+        "created",
+        "pending",
+        "succeeded",
+        "failed",
+        "cancelled",
+        "refunded",
+        "disputed",
+      ],
       profile_status: ["active", "disabled"],
       proof_kind: ["testimonial", "case_study"],
       proof_publication_status: [

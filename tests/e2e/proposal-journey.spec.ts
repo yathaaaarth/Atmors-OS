@@ -29,6 +29,10 @@ test.describe("proposal journey", () => {
       ["/dashboard/prospects", "Prospects"],
       ["/dashboard/proposals", "Proposals"],
       ["/dashboard/proof", "Proof library"],
+      ["/dashboard/meetings", "Meetings"],
+      ["/dashboard/contracts", "Agreements"],
+      ["/dashboard/contracts/templates", "Agreement templates"],
+      ["/dashboard/billing", "Billing"],
       ["/dashboard/team", "Team"],
       ["/dashboard/audit", "Audit log"],
     ] as const) {

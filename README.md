@@ -2,12 +2,11 @@
 
 This is the client conversion portal and internal operations dashboard for Atmors. The source of truth for scope and behaviour is [`Atmors_ClientOS_Final_PRD_v1.0.pdf`](Atmors_ClientOS_Final_PRD_v1.0.pdf).
 
-**Status:** Phase 2 complete. It includes everything from Phase 1 (auth, roles, RLS, audit, shells) plus:
-- the CRM: prospects, outreach log and follow-up queue
-- secure invitation links
-- fully custom, versioned proposals with approval and exact-version acceptance
-- the proof library
-- the client portal
+**Status:** Phase 3 complete. It includes everything from Phases 1 and 2 (auth, roles, RLS, audit, CRM, invitations, versioned proposals, proof library, client portal) plus:
+- shared booking with database-level conflict prevention, host routing, timezones and a callback fallback
+- agreements generated from the exact accepted proposal version, with an e-signature adapter (sandbox until a vendor is approved)
+- per-agreement payment schedules, invoices, payments through a provider adapter (Razorpay or sandbox), verified webhooks, refunds, disputes and manual reconciliation
+- the activation evaluator, internal tasks and provider exception queues
 
 ## Stack
 
@@ -34,6 +33,7 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, TypeScript, Tailwind v4 with 
    ```
    Repeat the command for each teammate with `--role ceo` or `--role delivery`.
 6. **Run the app:** `npm run dev`, then sign in at http://localhost:3000/login with the magic link.
+7. **Phase 3 setup (development):** set `ENABLE_SANDBOX_PROVIDERS=true` and a `SANDBOX_WEBHOOK_SECRET` in `.env.local` (see `.env.example`). In the dashboard, enable the `sandbox` provider for payments (account `acc_sandbox`) and e-signature under **Billing → Providers**, and set up booking hosts under **Meetings**. Never enable sandbox providers in production (D-013).
 
 ## Commands
 
@@ -54,12 +54,13 @@ Next.js 16 (App Router, `src/proxy.ts`), React 19, TypeScript, Tailwind v4 with 
 src/
   app/                  routes: /login, /auth/*, /dashboard (internal), /i/[token] (invitation), /portal (client), /api/*
   components/           shared UI (shadcn in components/ui)
-  modules/<domain>/     domain logic per PRD module (crm, proposals, proof)
+  modules/<domain>/     domain logic per PRD module (crm, proposals, proof, scheduling, contracts, billing)
   server/
     auth/               session (verified JWT)
     authorization/      permissions, member context
     actions/, http/     server action / route wrappers -> stable error envelope
     workflows/          state machine helper
+    integrations/       provider adapters (payments, esign, scheduling) and webhook ingest
     supabase/           clients + database types
     errors.ts, logger.ts, correlation.ts
 supabase/migrations/    versioned schema, RLS policies, RPCs

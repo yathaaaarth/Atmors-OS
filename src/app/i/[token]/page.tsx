@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { BrandMark } from "@/components/brand";
 import { ProposalDocument } from "@/components/proposal/proposal-document";
+import { PublicShell } from "@/components/public-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { hashInvitationToken, isPlausibleInvitationToken } from "@/modules/crm/invitation-token";
@@ -32,24 +32,9 @@ async function loadInvitation(token: string): Promise<InvitationView> {
   return parsed.data;
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex flex-1 flex-col">
-      <header className="border-b bg-card">
-        <div className="mx-auto w-full max-w-3xl px-4 py-3">
-          <BrandMark />
-        </div>
-      </header>
-      <main id="main" className="mx-auto w-full max-w-3xl flex-1 space-y-8 px-4 py-8">
-        {children}
-      </main>
-    </div>
-  );
-}
-
 function Unavailable({ token, title, description }: { token: string; title: string; description: string }) {
   return (
-    <Shell>
+    <PublicShell>
       <Card>
         <CardHeader>
           <CardTitle>
@@ -61,7 +46,7 @@ function Unavailable({ token, title, description }: { token: string; title: stri
           <HelpRequest token={token} kind="new_link" withMessage={false} />
         </CardContent>
       </Card>
-    </Shell>
+    </PublicShell>
   );
 }
 
@@ -99,7 +84,7 @@ export default async function InvitationPage(props: PageProps<"/i/[token]">) {
   }
   if (view.state === "redeemed") {
     return (
-      <Shell>
+      <PublicShell>
         <Card>
           <CardHeader>
             <CardTitle>
@@ -113,7 +98,7 @@ export default async function InvitationPage(props: PageProps<"/i/[token]">) {
             </Button>
           </CardContent>
         </Card>
-      </Shell>
+      </PublicShell>
     );
   }
 
@@ -123,7 +108,7 @@ export default async function InvitationPage(props: PageProps<"/i/[token]">) {
   const open = proposal ? OPEN_PROPOSAL_STATUSES.includes(proposal.proposal.status) : false;
 
   return (
-    <Shell>
+    <PublicShell>
       <section className="space-y-1">
         <p className="text-sm text-muted-foreground">Hi {firstName},</p>
         <p className="text-sm text-muted-foreground">
@@ -190,9 +175,15 @@ export default async function InvitationPage(props: PageProps<"/i/[token]">) {
         <CardContent className="grid gap-6 sm:grid-cols-2">
           <HelpRequest token={token} kind="question" label="Ask a question" />
           {open ? <HelpRequest token={token} kind="changes" label="What would you like changed?" /> : null}
-          <HelpRequest token={token} kind="call" label="Prefer to talk? Tell us when suits you" />
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Prefer to talk?</p>
+            <Button asChild variant="outline">
+              <Link href={`/i/${token}/book`}>Book a call</Link>
+            </Button>
+            <p className="text-xs text-muted-foreground">Your place in the proposal is kept while you book.</p>
+          </div>
         </CardContent>
       </Card>
-    </Shell>
+    </PublicShell>
   );
 }

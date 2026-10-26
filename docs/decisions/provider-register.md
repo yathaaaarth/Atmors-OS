@@ -4,10 +4,10 @@ Source: PRD §10 and §20. Nothing provider-specific enters a domain model until
 
 | Decision | Status | Owner | Needed by | Evidence required before approval |
 |---|---|---|---|---|
-| E-signature vendor | Open (deliberately deferred) | Yazan + legal | Before the Phase 3 contract integration release | Legal review (India applicability), API and webhook coverage, audit certificate and export, signer UX, data handling and residency, cost, support, exit strategy, test results |
+| E-signature vendor | Open (deliberately deferred). Adapter contract and sandbox built (`src/server/integrations/esign`) | Yazan + legal | Before agreements are sent to real clients | Legal review (India applicability), API and webhook coverage, audit certificate and export, signer UX, data handling and residency, cost, support, exit strategy, test results |
 | AI provider / model | Open (deliberately deferred) | Yatharth | Before the Phase 5 production AI launch | Representative evaluation set, groundedness, prompt-injection results, latency, cost, data-use terms, rate limits, structured-output support |
-| Scheduling implementation | Open (the shared system itself is fixed) | Yatharth | Phase 3 start | Shared availability, owner routing, conflict prevention, timezone handling, reschedule and cancel, API access, cost, fallback |
-| Payments provider / config | Razorpay proposed, subject to business review | Yazan | Phase 3 start | Merchant eligibility, methods and currencies, verified webhooks, refunds and disputes, fees, reconciliation, accounting requirements |
+| Scheduling implementation | Internal shared booking layer built (D-014); an external scheduler can plug in behind `SchedulingProvider` | Yatharth | Revisit if calendar sync is needed | Shared availability, owner routing, conflict prevention, timezone handling, reschedule and cancel, API access, cost, fallback |
+| Payments provider / config | Razorpay adapter built, untested against live Razorpay until merchant keys exist; sandbox used in development | Yazan | Before taking real payments: run the PRD §10 provider tests (wrong amount, wrong currency, duplicate, delayed, failed, refund, outage) in Razorpay test mode | Merchant eligibility, methods and currencies, verified webhooks, refunds and disputes, fees, reconciliation, accounting requirements |
 | Email | Resend proposed | Yatharth | Phase 2 (invitations) | Verified sender domain, delivery and bounce events, idempotent sends, cost |
 | Hosting | Vercel proposed | Yatharth | Before the staging deploy | Environment separation, secrets, preview protection, rollback, region and data terms |
 | Background jobs | Trigger.dev proposed | Yatharth | Phase 2/3 | Retries, deduplication, visibility, dead-letter and replay |
