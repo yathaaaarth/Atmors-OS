@@ -1,0 +1,46 @@
+name: Scheduled jobs
+
+# Free-tier scheduler (D-028). Calls the app's authenticated cron routes:
+# the notification dispatcher every 5 minutes and the daily checks at 08:00 IST.
+# Requires repository secrets APP_URL (e.g. https://atmors-clientos.vercel.app)
+# and CRON_SECRET (same value as the app). Does nothing until they are set.
+# GitHub may delay scheduled runs by a few minutes; every job is idempotent.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Which job to run"
+        type: choice
+        options: [dispatch, daily]
+        default: dispatch
+
+permissions: {}
+
+concurrency:
+  group: scheduled-jobs-${{ github.event.schedule || inputs.job }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call cron route
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          JOB: ${{ github.event.schedule == '30 2 * * *' && 'daily' || inputs.job || 'dispatch' }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "APP_URL or CRON_SECRET not configured; skipping."
+            exit 0
+          fi
+          status=$(curl -sS -o response.json -w "%{http_code}" --max-time 120 \
+            -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/cron/$JOB")
+          echo "HTTP $status"
+          cat response.json
+          test "$status" = "200"

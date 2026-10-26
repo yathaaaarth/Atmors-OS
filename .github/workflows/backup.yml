@@ -1,0 +1,69 @@
+name: Database backup
+
+# Free-tier backups (D-028, AT-034). Supabase's free plan has no backups, so
+# this takes a nightly logical dump, ENCRYPTS it, and keeps it as a workflow
+# artifact for 30 days. The repository is public: never upload an unencrypted
+# dump. Requires secrets BACKUP_DATABASE_URL (Supabase session-pooler
+# connection string) and BACKUP_PASSPHRASE (long random string, stored
+# somewhere safe outside GitHub too). Does nothing until both are set.
+# Restore steps: docs/runbooks/backup-restore.md.
+
+on:
+  schedule:
+    - cron: "0 21 * * *" # 02:30 IST
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check configuration
+        id: config
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$BACKUP_DATABASE_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "Backup secrets not configured; skipping."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install pg_dump 17
+        if: steps.config.outputs.enabled == 'true'
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client-17
+
+      - name: Dump and encrypt
+        if: steps.config.outputs.enabled == 'true'
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          stamp=$(date -u +%Y%m%dT%H%M%SZ)
+          # Application schemas only; Supabase-managed schemas are recreated by the platform.
+          /usr/lib/postgresql/17/bin/pg_dump "$BACKUP_DATABASE_URL" --format=custom --no-owner --no-privileges \
+            --schema=public --schema=private --schema=auth --schema=storage --file=backup.dump
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" \
+            --symmetric --cipher-algo AES256 --output "clientos-$stamp.dump.gpg" backup.dump
+          rm backup.dump
+          sha256sum "clientos-$stamp.dump.gpg" | tee "clientos-$stamp.sha256"
+
+      - name: Keep encrypted backup
+        if: steps.config.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: clientos-db-backup
+          path: |
+            clientos-*.dump.gpg
+            clientos-*.sha256
+          retention-days: 30

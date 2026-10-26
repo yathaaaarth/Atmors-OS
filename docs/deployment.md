@@ -1,47 +1,76 @@
-# Deployment guide
+# Deployment guide (free tier)
 
-This is the target setup for staging and production. Deployment itself is still to be agreed; this file lists what each environment needs.
+The pilot runs entirely on free plans (decision D-028). What each service gives, what it costs you in limits, and how to set it up.
 
-## Environments
+| Piece | Service (free plan) | Limits that matter | How we cover them |
+|---|---|---|---|
+| App | Vercel Hobby, region `bom1` (Mumbai) | Hobby is for non-commercial use; crons only daily | Scheduler moved to GitHub Actions; move to Pro when the business uses it commercially at scale |
+| Database, auth, files | Supabase Free, `ap-south-1` | 2 projects; 500 MB database; 1 GB files; pauses after 7 days idle; **no backups** | Dev project = development + testing; a second project = production. The 5-minute scheduler keeps production awake. Nightly encrypted backups through GitHub Actions |
+| Scheduler | GitHub Actions (free for public repos) | Scheduled runs can lag a few minutes; disabled after 60 days without repo activity | Every job is idempotent; a late run only delays emails |
+| Email | Resend Free | 3,000 per month, 100 per day | Enough for a pilot |
+| Payments | Razorpay (no monthly fee, about 2% per payment) | Needs merchant approval | Until then: bank transfer or UPI, recorded on the invoice (manual reconciliation) |
+| E-signature | None yet | Paid vendors cost money | Decision pending (see release-readiness) |
+| AI | Offline provider | Basic answers | Switch to Claude later if wanted (paid per use) |
 
-Use separate Supabase projects, keys and provider accounts for **development** (the current hosted dev project), **staging** and **production** (PRD §16). Never use production secrets locally.
+## 1. Production database (Supabase)
 
-## Supabase (per environment)
-
-1. Create the project (region `ap-south-1`).
-2. Apply migrations: `npm run db:link -- --project-ref <ref>` then `npm run db:push`.
+1. Create a new project: name `atmors-prod`, region `ap-south-1 (Mumbai)`, a strong database password (keep it in a password manager).
+2. Apply the schema from this repository:
+   ```sh
+   npx supabase link --project-ref <prod-ref>
+   npx supabase db push --linked
+   npx supabase link --project-ref arxsrxmuantnnsgpijek   # switch back to dev afterwards
+   ```
 3. Authentication:
-   - turn signups off;
-   - set the Site URL and Redirect URLs to `https://<domain>/**`;
-   - configure custom SMTP;
-   - make sure TOTP MFA is enabled.
-4. Storage: the `client-assets` bucket is created by the migration (private). Confirm it shows as private.
-5. Backups: enable Point-in-Time Recovery for production (see `runbooks/backup-restore.md`).
-6. Create the organization and staff: `npm run bootstrap -- --email … --name … --role …`.
+   - Sign In / Providers: turn **off** "Allow new users to sign up".
+   - URL Configuration: Site URL `https://<your-app-domain>`; Redirect URLs `https://<your-app-domain>/**`.
+   - Multi-Factor: TOTP enabled.
+   - Emails → SMTP: host `smtp.resend.com`, port `465`, user `resend`, password = Resend API key, sender = your verified address.
+4. Storage: check the `client-assets` bucket exists and is **private**.
+5. Create the organization and staff (with production keys in a temporary `.env.prod.local`, deleted afterwards):
+   `node --env-file=.env.prod.local scripts/bootstrap.ts --email … --name … --role cto_coo` (repeat per person).
 
-## Hosting (Vercel proposed)
+## 2. App (Vercel Hobby)
 
-1. Import the repository; framework Next.js; Node 24.
-2. Environment variables (Production and Preview separately):
+1. Sign in to Vercel with GitHub and import `Atmors-OS`. Framework: Next.js. Root: the repository root.
+2. Environment variables (Production):
 
-| Variable | Notes |
+| Variable | Value |
 |---|---|
-| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | from the environment's Supabase project |
-| `NEXT_PUBLIC_SITE_URL` | `https://<domain>` |
-| `SUPABASE_SECRET_KEY` | server only |
-| `CRON_SECRET` | 32+ random characters; Vercel Cron sends it automatically |
-| `RESEND_API_KEY`, `EMAIL_FROM` | notifications; without them emails are only logged |
-| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` | after merchant approval; then enable the account under Billing → Providers |
-| `REQUIRE_STAFF_MFA=true` | production and staging |
-| `AI_PROVIDER` (+ `ANTHROPIC_API_KEY`, …) | optional; default `local` |
-| `ENABLE_SANDBOX_PROVIDERS`, `SANDBOX_WEBHOOK_SECRET` | **never in production**; staging only if you want test payments |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://<prod-ref>.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | production publishable key |
+| `NEXT_PUBLIC_SITE_URL` | `https://<your-app-domain>` |
+| `SUPABASE_SECRET_KEY` | production secret key |
+| `CRON_SECRET` | 32+ random characters (also a GitHub secret, below) |
+| `RESEND_API_KEY`, `EMAIL_FROM` | from Resend, e.g. `Atmors <hello@yourdomain>` |
+| `REQUIRE_STAFF_MFA` | `true` |
 
-3. Cron (`vercel.json`): the dispatcher every 5 minutes and the daily checks at 08:00 IST. Vercel's Hobby plan only allows daily crons; on Hobby, use an external scheduler that calls `/api/cron/dispatch` with `Authorization: Bearer $CRON_SECRET`, or upgrade.
-4. Webhooks:
-   - Razorpay: `https://<domain>/api/webhooks/payments/razorpay` with events `payment.captured`, `payment.failed`, `refund.processed` and `payment.dispute.*`.
-   - E-signature vendor: `https://<domain>/api/webhooks/esign/<provider>`.
-5. Firewall: add per-IP rate limits for `/i/*`, `/login` and `/api/*` (D-009).
+   Do **not** set `ENABLE_SANDBOX_PROVIDERS`, `SANDBOX_WEBHOOK_SECRET` or any `*_PROVIDER=sandbox` in production.
+3. Deploy. The app address is `https://<project>.vercel.app`, or add a custom domain (one DNS record, free).
+4. Preview deployments (every branch) use the **dev** Supabase project: set the same variables for the Preview environment with dev values, plus the sandbox settings if you want test payments there.
 
-## Release
+## 3. Scheduler and backups (GitHub Actions)
 
-Follow the checklist in `runbooks/deployment-rollback.md`, then `release-readiness.md` for the gates.
+Repository → Settings → Secrets and variables → Actions → New repository secret:
+
+| Secret | Value |
+|---|---|
+| `APP_URL` | `https://<your-app-domain>` |
+| `CRON_SECRET` | the same value as in Vercel |
+| `BACKUP_DATABASE_URL` | Supabase → Connect → Session pooler connection string (with the database password) |
+| `BACKUP_PASSPHRASE` | a long random passphrase; **also store it in your password manager**, without it backups can't be opened |
+
+Then Actions → "Scheduled jobs" → Run workflow (once, to check), and Actions → "Database backup" → Run workflow. Operations in the dashboard shows the job runs.
+
+## 4. First checks after deploying
+
+1. Sign in as a staff member; you are asked to set up an authenticator (MFA).
+2. Create a test prospect and proposal, send yourself an invitation, check the email arrives.
+3. Operations shows "dispatch notifications" and "daily checks" running.
+4. Delete the test data (or keep it under a clearly named test prospect).
+
+## When to move off free plans
+
+- Vercel Pro (about $20/month): when the portal is used commercially beyond the pilot, or you need more than one region or team seats.
+- Supabase Pro (about $25/month): for automatic daily backups, no pausing, and more space. Point-in-time recovery is an extra add-on.
+- Nothing in the code changes; only the plan and the scheduler (Vercel Cron can then replace GitHub Actions).

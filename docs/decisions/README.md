@@ -151,7 +151,7 @@ These are the technical decisions made during implementation. Product decisions 
 ## D-025: Scheduled jobs through authenticated cron routes
 
 - **Date:** 2026-10-29 · **Status:** accepted
-- **Decision:** `/api/cron/dispatch` (every 5 minutes) and `/api/cron/daily` (billing checks, meeting reminders, stale-payment tasks) run on Vercel Cron with `Authorization: Bearer $CRON_SECRET`. They fail closed without the secret and record each run in `job_runs`, shown on Operations. Every job is idempotent. A managed job service (Trigger.dev, provider register) can replace the scheduler without changing the jobs.
+- **Decision:** `/api/cron/dispatch` (every 5 minutes) and `/api/cron/daily` (billing checks, meeting reminders, stale-payment tasks) run on Vercel Cron with `Authorization: Bearer $CRON_SECRET`. They fail closed without the secret and record each run in `job_runs`, shown on Operations. Every job is idempotent. A managed job service (Trigger.dev, provider register) can replace the scheduler without changing the jobs. *Scheduler superseded by D-028 for the free tier: GitHub Actions calls the same routes.*
 
 ## D-026: Application-level rate limits in Postgres
 
@@ -162,4 +162,10 @@ These are the technical decisions made during implementation. Product decisions 
 
 - **Date:** 2026-10-29 · **Status:** accepted
 - **Decision:** `src/proxy.ts` issues a per-request nonce CSP: scripts need the nonce, with `strict-dynamic` for the Razorpay checkout; no plugins; no framing. Inline style attributes are allowed because UI libraries use them. Staff who have enrolled TOTP must reach AAL2 each session before dashboard pages or staff actions run; `REQUIRE_STAFF_MFA=true` makes enrollment mandatory and is required in staging and production.
+
+## D-028: Free-tier hosting for the pilot
+
+- **Date:** 2026-10-29 · **Status:** accepted
+- **Decision:** Vercel Hobby (region `bom1`, next to Supabase `ap-south-1`), Supabase Free (the existing project for development and tests, a second one for production), Resend Free, and GitHub Actions for the scheduler (`scheduled-jobs.yml`, every 5 minutes plus daily) and for nightly backups (`backup.yml`: `pg_dump`, encrypted with AES-256 before upload because the repository is public, kept 30 days). Vercel Cron is not used because Hobby only allows daily jobs.
+- **Consequences:** No separate staging project (two free projects only); releases are rehearsed on Vercel preview deployments against the dev project. RPO is 24 hours. Vercel's Hobby terms are for non-commercial use, so move to Pro when usage becomes commercial. The upgrade path changes configuration, not code (docs/deployment.md).
 

@@ -41,14 +41,14 @@ Test suites: `npm test` (unit and database rules on PGlite), `npm run test:secur
 | AT-031 | Notification idempotency | Automated | `db/hardening.test.ts`, `unit/hardening.test.ts` |
 | AT-032 | Audit completeness | Automated | `db/hardening.test.ts` |
 | AT-033 | Mobile and accessibility | Automated | `e2e/accessibility.spec.ts` (axe, desktop and mobile), `e2e/smoke.spec.ts` (keyboard) |
-| AT-034 | Backup and recovery | **Open** | Procedure and objectives in `runbooks/backup-restore.md`; the restore exercise needs Supabase backup access on the hosted plan |
-| AT-035 | Deployment rollback | Documented | `runbooks/deployment-rollback.md`; additive migrations and idempotent jobs. Do one rollback drill on staging once hosting is set up |
+| AT-034 | Backup and recovery | **Open** | Nightly encrypted backups (`.github/workflows/backup.yml`) and the restore procedure in `runbooks/backup-restore.md`; the restore exercise runs once the first backup exists |
+| AT-035 | Deployment rollback | Documented | `runbooks/deployment-rollback.md`; additive migrations and idempotent jobs. Do one rollback drill (Vercel Instant Rollback) after the first production deploy |
 
 ## Release gates still open
 
 These need decisions, accounts or professional review outside the code. None of them is a missing feature.
 
-1. **Hosting and environments:** create staging and production (separate Supabase projects and keys); see `docs/deployment.md`.
+1. **Hosting (free tier, D-028):** production Supabase project, Vercel Hobby deployment, GitHub Actions secrets for the scheduler and backups; see `docs/deployment.md`.
 2. **Email:** custom SMTP for Supabase Auth sign-in links, plus `RESEND_API_KEY`/`EMAIL_FROM` and a verified sending domain for notifications (D-010).
 3. **Payments:** Razorpay merchant approval. Then run the PRD §10 provider tests in Razorpay test mode: wrong amount, wrong currency, duplicate, delayed, failed, refund and outage. The sandbox already covers the same paths.
 4. **E-signature vendor:** choose and approve one, then add its adapter (provider register).
