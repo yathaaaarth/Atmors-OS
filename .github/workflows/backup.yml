@@ -1,8 +1,9 @@
 name: Database backup
 
 # Free-tier backups (D-028, AT-034). Supabase's free plan has no backups, so
-# this takes a nightly logical dump, ENCRYPTS it, and keeps it as a workflow
-# artifact for 30 days. The repository is public: never upload an unencrypted
+# this takes a logical dump every 6 hours (RPO 6h), plus a copy of uploaded
+# client files when BACKUP_SUPABASE_URL and BACKUP_SUPABASE_SECRET_KEY are set,
+# ENCRYPTS both, and keeps them as workflow artifacts for 30 days. The repository is public: never upload an unencrypted
 # dump. Requires secrets BACKUP_DATABASE_URL (Supabase session-pooler
 # connection string) and BACKUP_PASSPHRASE (long random string, stored
 # somewhere safe outside GitHub too). Does nothing until both are set.
@@ -10,7 +11,7 @@ name: Database backup
 
 on:
   schedule:
-    - cron: "0 21 * * *" # 02:30 IST
+    - cron: "0 */6 * * *" # 05:30, 11:30, 17:30, 23:30 IST
   workflow_dispatch:
 
 permissions:
@@ -21,6 +22,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      # First, so its workspace clean-up cannot remove the dump.
+      - name: Check out (storage backup script)
+        uses: actions/checkout@v4
+
       - name: Check configuration
         id: config
         env:
@@ -58,12 +63,31 @@ jobs:
           rm backup.dump
           sha256sum "clientos-$stamp.dump.gpg" | tee "clientos-$stamp.sha256"
 
+      - name: Copy and encrypt uploaded files
+        if: steps.config.outputs.enabled == 'true'
+        env:
+          BACKUP_SUPABASE_URL: ${{ secrets.BACKUP_SUPABASE_URL }}
+          BACKUP_SUPABASE_SECRET_KEY: ${{ secrets.BACKUP_SUPABASE_SECRET_KEY }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          if [ -z "$BACKUP_SUPABASE_URL" ] || [ -z "$BACKUP_SUPABASE_SECRET_KEY" ]; then
+            echo "Storage backup secrets not configured; database only."
+            exit 0
+          fi
+          stamp=$(date -u +%Y%m%dT%H%M%SZ)
+          node scripts/backup-storage.mjs "$RUNNER_TEMP/files"
+          tar -C "$RUNNER_TEMP/files" -czf files.tar.gz .
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE"             --symmetric --cipher-algo AES256 --output "clientos-files-$stamp.tar.gz.gpg" files.tar.gz
+          rm -rf files.tar.gz "$RUNNER_TEMP/files"
+          sha256sum "clientos-files-$stamp.tar.gz.gpg" | tee -a "clientos-files-$stamp.sha256"
+
       - name: Keep encrypted backup
         if: steps.config.outputs.enabled == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: clientos-db-backup
+          name: clientos-backup-${{ github.run_id }}
           path: |
-            clientos-*.dump.gpg
+            clientos-*.gpg
             clientos-*.sha256
           retention-days: 30

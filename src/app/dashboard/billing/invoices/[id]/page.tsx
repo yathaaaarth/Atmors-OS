@@ -67,6 +67,9 @@ export default async function InvoicePage(props: PageProps<"/dashboard/billing/i
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="font-heading text-2xl font-semibold tracking-tight">{invoice.invoice_number}</h1>
           <StatusBadge status={invoice.status} />
+          <Link href={`/dashboard/billing/invoices/${invoice.id}/print`} className="text-sm underline underline-offset-4">
+            Printable invoice
+          </Link>
         </div>
         <p className="text-sm text-muted-foreground">
           {invoice.label} · {invoice.prospects?.company ?? invoice.prospects?.name} ·{" "}

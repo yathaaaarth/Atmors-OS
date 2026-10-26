@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { AccessDenied } from "@/components/access-denied";
 import { ActionForm } from "@/components/action-form";
+import { InternalSignForm } from "@/components/contracts/internal-sign-form";
 import { StatusBadge } from "@/components/status-badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,9 +21,11 @@ import { memberPageAccess } from "../../member-page";
 import {
   amendContract,
   countersignContract,
+  countersignWithCode,
   evaluateActivation,
   issueInvoice,
   recordActivationReview,
+  requestCountersignCode,
   sendContract,
   transitionContract,
 } from "../actions";
@@ -87,7 +90,8 @@ export default async function ContractPage(props: PageProps<"/dashboard/contract
           <StatusBadge status={contract.status} />
         </div>
         <p className="text-sm text-muted-foreground">
-          {contract.client_legal_name} · {formatMoney(contract.total_minor, contract.currency)} · document{" "}
+          {contract.client_legal_name}
+          {contract.client_country && contract.client_country !== "IN" ? ` (${contract.client_country}, export)` : ""} · {formatMoney(contract.total_minor, contract.currency)} · document{" "}
           <code className="text-xs">{contract.checksum.slice(0, 16)}</code> · template {contract.contract_templates?.name} v
           {contract.template_version}
         </p>
@@ -133,7 +137,16 @@ export default async function ContractPage(props: PageProps<"/dashboard/contract
           ) : null}
           {["sent", "viewed"].includes(contract.status) ? <p>Waiting for the client to sign in their portal.</p> : null}
           {contract.status === "partially_signed" ? (
-            isCountersigner && canManage ? (
+            isCountersigner && canManage && contract.provider === "internal" ? (
+              <InternalSignForm
+                contractId={contract.id}
+                checksum={contract.checksum}
+                signerName={context.displayName}
+                onBehalfOf={context.organizationName}
+                requestCode={requestCountersignCode}
+                sign={countersignWithCode}
+              />
+            ) : isCountersigner && canManage ? (
               <ActionForm
                 action={countersignContract}
                 submitLabel="Countersign for Atmors"
@@ -209,6 +222,14 @@ export default async function ContractPage(props: PageProps<"/dashboard/contract
                     <StatusBadge status={signer.status === "signed" ? "executed" : signer.status} />
                     {signer.signed_at ? <span className="text-xs text-muted-foreground">{dateTime.format(new Date(signer.signed_at))}</span> : null}
                   </span>
+                  {(() => {
+                    const evidence = signer.evidence as { method?: string; typed_name?: string; ip_hash?: string; user_agent?: string };
+                    return evidence.method === "email_code" ? (
+                      <span className="block w-full text-xs text-muted-foreground">
+                        Signed as “{evidence.typed_name}”, email code verified · device {evidence.user_agent?.slice(0, 60) || "unknown"} · network {evidence.ip_hash?.slice(0, 12) || "n/a"}
+                      </span>
+                    ) : null;
+                  })()}
                 </li>
               ))}
             </ul>

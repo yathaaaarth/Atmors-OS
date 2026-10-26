@@ -400,6 +400,60 @@ export type Database = {
           },
         ]
       }
+      billing_settings: {
+        Row: {
+          address: string | null
+          bank_instructions: string | null
+          created_at: string
+          gstin: string | null
+          invoice_footer: string | null
+          legal_name: string | null
+          lut_number: string | null
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          address?: string | null
+          bank_instructions?: string | null
+          created_at?: string
+          gstin?: string | null
+          invoice_footer?: string | null
+          legal_name?: string | null
+          lut_number?: string | null
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          address?: string | null
+          bank_instructions?: string | null
+          created_at?: string
+          gstin?: string | null
+          invoice_footer?: string | null
+          legal_name?: string | null
+          lut_number?: string | null
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_hosts: {
         Row: {
           active: boolean
@@ -739,6 +793,7 @@ export type Database = {
           amendment_text: string | null
           checksum: string
           client_address: string
+          client_country: string | null
           client_legal_name: string
           client_tax_id: string | null
           countersigner_user_id: string
@@ -781,6 +836,7 @@ export type Database = {
           amendment_text?: string | null
           checksum: string
           client_address: string
+          client_country?: string | null
           client_legal_name: string
           client_tax_id?: string | null
           countersigner_user_id: string
@@ -823,6 +879,7 @@ export type Database = {
           amendment_text?: string | null
           checksum?: string
           client_address?: string
+          client_country?: string | null
           client_legal_name?: string
           client_tax_id?: string | null
           countersigner_user_id?: string
@@ -3179,6 +3236,63 @@ export type Database = {
         }
         Relationships: []
       }
+      signature_challenges: {
+        Row: {
+          attempts: number
+          checksum: string
+          code_hash: string
+          consumed_at: string | null
+          contract_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          organization_id: string
+          signer_role: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          checksum: string
+          code_hash: string
+          consumed_at?: string | null
+          contract_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          organization_id: string
+          signer_role: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          checksum?: string
+          code_hash?: string
+          consumed_at?: string | null
+          contract_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          organization_id?: string
+          signer_role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signature_challenges_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signature_challenges_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       signature_events: {
         Row: {
           contract_id: string | null
@@ -3721,6 +3835,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      begin_internal_signature: {
+        Args: {
+          p_checksum: string
+          p_code_hash: string
+          p_contract_id: string
+          p_correlation_id?: string
+        }
+        Returns: Json
+      }
       book_meeting_with_token: {
         Args: {
           p_correlation_id?: string
@@ -3835,6 +3958,15 @@ export type Database = {
         }
         Returns: Json
       }
+      client_report_transfer: {
+        Args: {
+          p_correlation_id?: string
+          p_invoice_id: string
+          p_note?: string
+          p_reference: string
+        }
+        Returns: Json
+      }
       client_request_callback: {
         Args: {
           p_correlation_id?: string
@@ -3900,6 +4032,17 @@ export type Database = {
         Returns: Json
       }
       client_workspace: { Args: never; Returns: Json }
+      complete_internal_signature: {
+        Args: {
+          p_checksum: string
+          p_code_hash: string
+          p_contract_id: string
+          p_correlation_id?: string
+          p_evidence: Json
+          p_typed_name: string
+        }
+        Returns: Json
+      }
       complete_notification: {
         Args: {
           p_error: string
@@ -4012,6 +4155,7 @@ export type Database = {
           amendment_text: string | null
           checksum: string
           client_address: string
+          client_country: string | null
           client_legal_name: string
           client_tax_id: string | null
           countersigner_user_id: string
@@ -4249,6 +4393,7 @@ export type Database = {
           amendment_text: string | null
           checksum: string
           client_address: string
+          client_country: string | null
           client_legal_name: string
           client_tax_id: string | null
           countersigner_user_id: string
@@ -4528,6 +4673,7 @@ export type Database = {
           amendment_text: string | null
           checksum: string
           client_address: string
+          client_country: string | null
           client_legal_name: string
           client_tax_id: string | null
           countersigner_user_id: string
@@ -4821,6 +4967,31 @@ export type Database = {
         Returns: Json
       }
       run_periodic_checks: { Args: never; Returns: Json }
+      save_billing_settings: {
+        Args: {
+          p_correlation_id?: string
+          p_fields: Json
+          p_organization_id: string
+        }
+        Returns: {
+          address: string | null
+          bank_instructions: string | null
+          created_at: string
+          gstin: string | null
+          invoice_footer: string | null
+          legal_name: string | null
+          lut_number: string | null
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "billing_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       save_booking_host: {
         Args: {
           p_active?: boolean
@@ -5361,6 +5532,7 @@ export type Database = {
           amendment_text: string | null
           checksum: string
           client_address: string
+          client_country: string | null
           client_legal_name: string
           client_tax_id: string | null
           countersigner_user_id: string

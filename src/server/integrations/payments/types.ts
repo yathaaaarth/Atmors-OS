@@ -47,8 +47,8 @@ export interface PaymentProvider {
   /** Create an order for the exact amount and currency. Throws AppError on failure. */
   createOrder(input: CreateOrderInput): Promise<{ providerOrderId: string }>;
   checkout(input: { paymentId: string; providerOrderId: string; amountMinor: number; currency: string }): CheckoutInstructions;
-  /** Authenticate the raw webhook body with the provider's documented method. */
-  verifyWebhook(rawBody: string, headers: Headers): boolean;
+  /** Authenticate the raw webhook body with the provider's documented method (some need an API call). */
+  verifyWebhook(rawBody: string, headers: Headers): boolean | Promise<boolean>;
   /** Normalize a verified webhook; null when the body cannot be understood. */
   parseWebhook(rawBody: string, headers: Headers): NormalizedPaymentEvent | null;
 }

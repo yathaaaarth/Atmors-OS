@@ -7,6 +7,7 @@ import { createSupabaseAdminClient } from "@/server/supabase/admin";
 import { sha256Hex } from "./crypto";
 import { esignProvider } from "./esign/registry";
 import { paymentProvider } from "./payments/registry";
+import type { NormalizedPaymentEvent } from "./payments/types";
 
 export type IngestOutcome = {
   /** HTTP status for the provider: 2xx stops retries, 401 rejects a bad signature. */
@@ -17,9 +18,9 @@ export type IngestOutcome = {
 
 const MAX_BODY_BYTES = 256 * 1024;
 
-function verify(check: () => boolean): boolean {
+async function verify(check: () => boolean | Promise<boolean>): Promise<boolean> {
   try {
-    return check();
+    return await check();
   } catch {
     return false;
   }
@@ -47,7 +48,30 @@ export async function ingestPaymentWebhook(
   if (!provider) throw new AppError("NOT_FOUND", { detail: `payment provider ${providerId} is not enabled` });
   assertSize(rawBody);
 
-  const event = verify(() => provider.verifyWebhook(rawBody, headers)) ? provider.parseWebhook(rawBody, headers) : null;
+  const event = (await verify(() => provider.verifyWebhook(rawBody, headers))) ? provider.parseWebhook(rawBody, headers) : null;
+  return recordPaymentEvent(provider.id, event, rawBody, correlationId);
+}
+
+/**
+ * Record an event the server obtained itself from the provider's API (for
+ * example a PayPal capture response). It is authentic by construction and
+ * goes through the same deduplicating ingest as webhooks.
+ */
+export async function ingestFetchedPaymentEvent(
+  providerId: string,
+  event: NormalizedPaymentEvent,
+  correlationId: string,
+): Promise<IngestOutcome> {
+  return recordPaymentEvent(providerId, event, JSON.stringify(event), correlationId);
+}
+
+async function recordPaymentEvent(
+  providerId: string,
+  event: NormalizedPaymentEvent | null,
+  rawBody: string,
+  correlationId: string,
+): Promise<IngestOutcome> {
+  const provider = { id: providerId };
   const payloadHash = sha256Hex(rawBody);
   const { data, error } = await createSupabaseAdminClient().rpc("ingest_payment_event", {
     p_provider: provider.id,
@@ -81,7 +105,7 @@ export async function ingestSignatureWebhook(
   if (!provider) throw new AppError("NOT_FOUND", { detail: `e-signature provider ${providerId} is not enabled` });
   assertSize(rawBody);
 
-  const event = verify(() => provider.verifyWebhook(rawBody, headers)) ? provider.parseWebhook(rawBody, headers) : null;
+  const event = (await verify(() => provider.verifyWebhook(rawBody, headers))) ? provider.parseWebhook(rawBody, headers) : null;
   const payloadHash = sha256Hex(rawBody);
   const { data, error } = await createSupabaseAdminClient().rpc("ingest_signature_event", {
     p_provider: provider.id,

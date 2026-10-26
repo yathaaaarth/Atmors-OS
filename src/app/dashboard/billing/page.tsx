@@ -15,7 +15,9 @@ import { fromPostgrestError } from "@/server/errors";
 import { createSupabaseServerClient } from "@/server/supabase/server";
 
 import { memberPageAccess } from "../member-page";
-import { configureIntegration, reprocessPaymentEvent, runBillingChecks } from "./actions";
+import { Textarea } from "@/components/ui/textarea";
+
+import { configureIntegration, reprocessPaymentEvent, runBillingChecks, saveBillingSettings } from "./actions";
 
 export const metadata: Metadata = { title: "Billing" };
 
@@ -57,11 +59,16 @@ export default async function BillingPage(props: PageProps<"/dashboard/billing">
     .limit(200);
   if (status) invoiceQuery = invoiceQuery.eq("status", status);
 
-  const [invoices, exceptions, accounts] = await Promise.all([
+  const [invoices, exceptions, accounts, settings] = await Promise.all([
     finance ? invoiceQuery : Promise.resolve({ data: [], error: null }),
     supabase.rpc("integration_exceptions", { p_organization_id: context.organizationId }),
     supabase.from("integration_accounts").select("*").eq("organization_id", context.organizationId).order("kind"),
+    finance
+      ? supabase.from("billing_settings").select("*").eq("organization_id", context.organizationId).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
   ]);
+  if (settings.error) throw fromPostgrestError(settings.error);
+  const billing = settings.data;
   if (invoices.error) throw fromPostgrestError(invoices.error);
   if (exceptions.error) throw fromPostgrestError(exceptions.error);
   if (accounts.error) throw fromPostgrestError(accounts.error);
@@ -211,11 +218,11 @@ export default async function BillingPage(props: PageProps<"/dashboard/billing">
               </div>
               <div className="space-y-1">
                 <Label htmlFor="int-provider">Provider</Label>
-                <Input id="int-provider" name="provider" placeholder="razorpay" required />
+                <Input id="int-provider" name="provider" placeholder="razorpay, paypal or internal" required />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="int-account">Account / merchant ID</Label>
-                <Input id="int-account" name="accountId" placeholder="acc_…" required />
+                <Input id="int-account" name="accountId" placeholder="acc_…, PayPal merchant ID, or atmors" required />
               </div>
               <label className="flex items-center gap-2 pb-2 text-sm">
                 <input type="checkbox" name="active" defaultChecked /> Active
@@ -224,6 +231,62 @@ export default async function BillingPage(props: PageProps<"/dashboard/billing">
           ) : null}
         </CardContent>
       </Card>
+
+      {finance ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Invoice details and bank transfer</CardTitle>
+            <CardDescription>
+              Printed on every invoice. Bank details are shown to clients only on unpaid invoices. For clients outside India,
+              invoices are marked as export of services and show your LUT number; confirm the wording with your accountant.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {canManage ? (
+              <ActionForm action={saveBillingSettings} submitLabel="Save invoice details" variant="outline" className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label htmlFor="bs-name">Registered business name</Label>
+                  <Input id="bs-name" name="legal_name" defaultValue={billing?.legal_name ?? ""} maxLength={200} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="bs-gstin">GSTIN</Label>
+                  <Input id="bs-gstin" name="gstin" defaultValue={billing?.gstin ?? ""} maxLength={15} />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label htmlFor="bs-address">Registered address</Label>
+                  <Textarea id="bs-address" name="address" rows={2} defaultValue={billing?.address ?? ""} maxLength={500} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="bs-lut">LUT reference (export of services)</Label>
+                  <Input id="bs-lut" name="lut_number" defaultValue={billing?.lut_number ?? ""} maxLength={60} />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="bs-footer">Invoice footer</Label>
+                  <Input id="bs-footer" name="invoice_footer" defaultValue={billing?.invoice_footer ?? ""} maxLength={1000} />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label htmlFor="bs-bank">Bank transfer instructions</Label>
+                  <Textarea
+                    id="bs-bank"
+                    name="bank_instructions"
+                    rows={5}
+                    defaultValue={billing?.bank_instructions ?? ""}
+                    maxLength={4000}
+                    placeholder={"Beneficiary: …\nBank: …\nAccount no.: …\nIFSC: … / SWIFT: …"}
+                  />
+                  <p className="text-xs text-muted-foreground">Account details only. Never put passwords or card numbers here.</p>
+                </div>
+              </ActionForm>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {billing?.legal_name ?? context.organizationName}
+                {billing?.gstin ? ` · GSTIN ${billing.gstin}` : ""}
+                {billing?.bank_instructions ? " · bank transfer instructions set" : " · no bank transfer instructions"}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

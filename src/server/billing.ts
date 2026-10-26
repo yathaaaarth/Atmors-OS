@@ -4,8 +4,8 @@ import { randomUUID } from "node:crypto";
 
 import { paymentStatusSchema, startPaymentResultSchema, type PaymentStatus } from "@/modules/billing/schema";
 import { AppError, fromPostgrestError } from "@/server/errors";
-import { ingestPaymentWebhook } from "@/server/integrations/ingest";
-import { checkoutProviderId, paymentProvider, sandboxPayments } from "@/server/integrations/payments/registry";
+import { ingestFetchedPaymentEvent, ingestPaymentWebhook } from "@/server/integrations/ingest";
+import { checkoutOptions, paymentProvider, paypalPayments, sandboxPayments } from "@/server/integrations/payments/registry";
 import { SANDBOX_PAYMENT_ACCOUNT } from "@/server/integrations/payments/sandbox";
 import type { CheckoutInstructions } from "@/server/integrations/payments/types";
 import { logger } from "@/server/logger";
@@ -21,12 +21,13 @@ import { createSupabaseServerClient } from "@/server/supabase/server";
  */
 export async function startPayment(input: {
   invoiceId: string;
+  provider: string;
   amountMinor: number | null;
   idempotencyKey: string;
   correlationId: string;
 }): Promise<{ paymentId: string; checkout: CheckoutInstructions }> {
-  const providerId = checkoutProviderId();
-  const provider = providerId ? paymentProvider(providerId) : null;
+  const offered = checkoutOptions().some((option) => option.provider === input.provider);
+  const provider = offered ? paymentProvider(input.provider) : null;
   if (!provider) throw new AppError("PROVIDER_UNAVAILABLE", { detail: "no payment provider configured" });
 
   const supabase = await createSupabaseServerClient();
@@ -39,6 +40,9 @@ export async function startPayment(input: {
   });
   if (error) throw fromPostgrestError(error);
   const attempt = startPaymentResultSchema.parse(data);
+  if (attempt.provider !== provider.id) {
+    throw new AppError("INVALID_STATE_TRANSITION", { message: "This payment was started with another method. Reload the page to start again." });
+  }
 
   const checkoutFor = (orderId: string) =>
     provider.checkout({
@@ -116,4 +120,23 @@ export async function completeSandboxPayment(
     },
   });
   await ingestPaymentWebhook("sandbox", rawBody, headers, correlationId);
+}
+
+/**
+ * PayPal return: capture the approved order on the server. Only the capture
+ * response (or the webhook) marks the payment paid; the query string the
+ * browser brings back is only a hint about which order to capture.
+ */
+export async function capturePayPalReturn(paymentId: string, orderToken: string, correlationId: string): Promise<PaymentStatus> {
+  const status = await getPaymentStatus(paymentId);
+  const paypal = paypalPayments();
+  if (!paypal || status.provider !== "paypal" || !status.provider_order_id || status.provider_order_id !== orderToken) {
+    throw new AppError("NOT_FOUND", { detail: "not a PayPal payment for this order" });
+  }
+  if (status.status === "created" || status.status === "pending") {
+    const event = await paypal.capture(status.provider_order_id, paymentId);
+    if (event) await ingestFetchedPaymentEvent("paypal", event, correlationId);
+    else logger.info("payment.paypal_capture_pending", { correlation_id: correlationId, payment_id: paymentId });
+  }
+  return getPaymentStatus(paymentId);
 }

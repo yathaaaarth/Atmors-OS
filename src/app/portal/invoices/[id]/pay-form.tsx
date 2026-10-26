@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import type { CheckoutOption } from "@/server/integrations/payments/registry";
+
 import type { PayResult } from "../actions";
 
 type State = { ok: true; data: PayResult } | { ok: false; error: { message: string; correlation_id: string } } | null;
@@ -47,8 +49,10 @@ export function PayForm({
   balanceLabel,
   allowPartial,
   defaultAmount,
+  options,
 }: {
   action: (state: State, formData: FormData) => Promise<State>;
+  options: CheckoutOption[];
   invoiceId: string;
   idempotencyKey: string;
   balanceLabel: string;
@@ -94,9 +98,23 @@ export function PayForm({
           <p className="text-xs text-muted-foreground">Part payments are allowed on this invoice, up to {balanceLabel}.</p>
         </div>
       ) : null}
-      <Button type="submit" size="lg" disabled={pending || Boolean(state?.ok)}>
-        {pending || state?.ok ? "Opening secure checkout…" : `Pay ${allowPartial ? "now" : balanceLabel}`}
-      </Button>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {options.map((option, index) => (
+          <Button
+            key={option.provider}
+            type="submit"
+            name="provider"
+            value={option.provider}
+            size="lg"
+            variant={index === 0 ? "default" : "outline"}
+            disabled={pending || Boolean(state?.ok)}
+            className="h-auto flex-col items-start gap-0.5 py-3 text-left whitespace-normal"
+          >
+            <span>{pending || state?.ok ? "Opening secure checkout…" : `${option.label}: pay ${allowPartial ? "now" : balanceLabel}`}</span>
+            <span className="text-xs font-normal opacity-80">{option.description}</span>
+          </Button>
+        ))}
+      </div>
       {state && !state.ok ? (
         <p role="alert" className="text-sm text-destructive">
           {state.error.message} <span className="text-xs text-muted-foreground">(ref {state.error.correlation_id.slice(0, 8)})</span>

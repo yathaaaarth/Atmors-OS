@@ -31,3 +31,21 @@ export function razorpayConfig(): RazorpayConfig | null {
   const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
   return keyId && keySecret && webhookSecret ? { keyId, keySecret, webhookSecret } : null;
 }
+
+export type PayPalEnvConfig = {
+  clientId: string;
+  clientSecret: string;
+  webhookId: string;
+  merchantId: string;
+  env: "live" | "sandbox";
+};
+
+/** PayPal for international clients. PAYPAL_ENV defaults to the PayPal sandbox; "live" takes real money. */
+export function paypalConfig(): PayPalEnvConfig | null {
+  const clientId = process.env.PAYPAL_CLIENT_ID;
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+  const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+  const merchantId = process.env.PAYPAL_MERCHANT_ID;
+  if (!clientId || !clientSecret || !webhookId || !merchantId) return null;
+  return { clientId, clientSecret, webhookId, merchantId, env: process.env.PAYPAL_ENV === "live" ? "live" : "sandbox" };
+}

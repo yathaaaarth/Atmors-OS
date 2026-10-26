@@ -148,12 +148,12 @@ test.describe("agreement and payment journey", () => {
     const page = await context.newPage();
     await page.goto("/portal");
     await page.getByRole("link", { name: /Deposit.*₹590\.00 due/ }).click();
-    await page.getByRole("button", { name: "Pay ₹590.00" }).click();
+    await page.getByRole("button", { name: /Test checkout: pay ₹590.00/ }).click();
     await expect(page).toHaveURL(/\/portal\/pay\/sandbox\//);
 
     await page.getByRole("button", { name: "Pay, but delay the confirmation" }).click();
     await expect(page.getByRole("heading", { name: "Confirming your payment" })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^Pay / })).toHaveCount(0); // no double payment while pending
+    await expect(page.getByRole("button", { name: /: pay / })).toHaveCount(0); // no double payment while pending
 
     await page.getByRole("link", { name: "Open the test checkout" }).click();
     await page.getByRole("button", { name: "Pay successfully" }).click();

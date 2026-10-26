@@ -129,3 +129,37 @@ export async function configureIntegration(_: unknown, formData: FormData): Prom
     return null;
   });
 }
+
+const settingsSchema = z.object({
+  legal_name: z.string().trim().max(200).optional(),
+  address: z.string().trim().max(500).optional(),
+  gstin: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^([0-9A-Z]{15})?$/, "A GSTIN is 15 letters and digits.")
+    .optional(),
+  lut_number: z.string().trim().max(60).optional(),
+  bank_instructions: z.string().trim().max(4000).optional(),
+  invoice_footer: z.string().trim().max(1000).optional(),
+});
+
+/** Seller details printed on invoices, and the wire instructions clients see on unpaid invoices. */
+export async function saveBillingSettings(_: unknown, formData: FormData): Promise<ActionResult<null>> {
+  return runAction("billing.settings", async (correlationId) => {
+    const context = await requireMemberContext();
+    const values = parseInput(
+      settingsSchema,
+      formObject(formData, ["legal_name", "address", "gstin", "lut_number", "bank_instructions", "invoice_footer"]),
+    );
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase.rpc("save_billing_settings", {
+      p_organization_id: context.organizationId,
+      p_fields: values,
+      p_correlation_id: correlationId,
+    });
+    if (error) throw fromPostgrestError(error);
+    revalidateInvoice();
+    return null;
+  });
+}

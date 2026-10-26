@@ -166,6 +166,23 @@ These are the technical decisions made during implementation. Product decisions 
 ## D-028: Free-tier hosting for the pilot
 
 - **Date:** 2026-10-29 · **Status:** accepted
-- **Decision:** Vercel Hobby (region `bom1`, next to Supabase `ap-south-1`), Supabase Free (the existing project for development and tests, a second one for production), Resend Free, and GitHub Actions for the scheduler (`scheduled-jobs.yml`, every 5 minutes plus daily) and for nightly backups (`backup.yml`: `pg_dump`, encrypted with AES-256 before upload because the repository is public, kept 30 days). Vercel Cron is not used because Hobby only allows daily jobs.
-- **Consequences:** No separate staging project (two free projects only); releases are rehearsed on Vercel preview deployments against the dev project. RPO is 24 hours. Vercel's Hobby terms are for non-commercial use, so move to Pro when usage becomes commercial. The upgrade path changes configuration, not code (docs/deployment.md).
+- **Decision:** Vercel Hobby (region `bom1`, next to Supabase `ap-south-1`), Supabase Free (the existing project for development and tests, a second one for production), Resend Free, and GitHub Actions for the scheduler (`scheduled-jobs.yml`, every 5 minutes plus daily) and for backups (`backup.yml`: `pg_dump` every 6 hours plus the uploaded files, encrypted with AES-256 before upload because the repository is public, kept 30 days). Vercel Cron is not used because Hobby only allows daily jobs.
+- **Consequences:** No separate staging project (two free projects only); releases are rehearsed on Vercel preview deployments against the dev project. RPO is 6 hours. Vercel's Hobby terms are for non-commercial use, so move to Pro when usage becomes commercial. The upgrade path changes configuration, not code (docs/deployment.md).
 
+
+## D-029: Built-in e-signature
+
+- **Date:** 2026-10-30 · **Status:** accepted (legal review pending)
+- **Decision:** Agreements are signed inside ClientOS instead of through a paid vendor. The signer must be signed in as the named signer, receives a 6-digit code by email, types their full name, and ticks consent. The database (`begin_internal_signature`, `complete_internal_signature`) allows 5 codes per hour, 10 minutes per code and 5 attempts. It binds the signature to the document checksum and records the evidence on the signer row: method, typed name, checksum, time, hashed network address and device. The signature is written as a verified `signature_events` row (provider `internal`), so execution, invoicing and activation follow the same path as a vendor webhook. Codes are stored only as SHA-256 hashes.
+- **Consequences:** No per-envelope cost. This is an electronic signature, not an Aadhaar eSign or a qualified signature. Under the Indian IT Act 2000, and with US (ESIGN/UETA) and UK clients, that suits most service agreements, but some document types and jurisdictions need more. Have a lawyer confirm the template and the process. A vendor adapter can still be added through `EsignProvider` and chosen with `ESIGN_PROVIDER`.
+
+## D-030: International payments: card, PayPal, and wire transfer
+
+- **Date:** 2026-10-30 · **Status:** accepted
+- **Decision:** Clients choose how to pay from the methods enabled for the invoice currency:
+  - **Razorpay**, with international cards enabled on the merchant account, for every currency.
+  - **PayPal** (Orders v2) for USD, EUR, GBP, AUD, CAD and SGD. INR is not offered, because PayPal India does not take domestic payments. PayPal shows the approval page, then the server captures the order with its own credentials. That capture response is ingested as a verified event (`capture:<id>`), and the later `PAYMENT.CAPTURE.COMPLETED` webhook (verified through PayPal's verification API against `PAYPAL_WEBHOOK_ID`) is a deduplicated duplicate.
+  - **Bank transfer**: the instructions from Billing → Invoice details are shown on unpaid invoices. "I've sent the transfer" creates a finance task (`client_report_transfer`), never a payment. Finance records the payment manually once the money arrives (D-016, AT-019).
+
+  The client's country is captured on the agreement. When it is not India, invoices are marked as export of services and print the LUT reference, so the supply is zero-rated without IGST.
+- **Consequences:** Stripe is not used, because new Indian accounts are invite-only; the adapter pattern allows it later. Card and PayPal fees (about 3 to 4.4 % plus currency conversion) are paid by Atmors. A wire is cheaper for large invoices, which is why it is always shown when bank details exist. Invoice numbering, GST and LUT wording need accountant review before go-live.

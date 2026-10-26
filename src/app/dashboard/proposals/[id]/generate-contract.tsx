@@ -12,6 +12,13 @@ import { createSupabaseServerClient } from "@/server/supabase/server";
 
 import { generateContract } from "../../contracts/actions";
 
+const COUNTRIES: [string, string][] = [
+  ["IN", "India"], ["US", "United States"], ["GB", "United Kingdom"], ["AE", "United Arab Emirates"], ["SG", "Singapore"],
+  ["AU", "Australia"], ["CA", "Canada"], ["DE", "Germany"], ["FR", "France"], ["NL", "Netherlands"], ["IE", "Ireland"],
+  ["SA", "Saudi Arabia"], ["QA", "Qatar"], ["NZ", "New Zealand"], ["ZA", "South Africa"], ["SE", "Sweden"], ["CH", "Switzerland"],
+  ["ES", "Spain"], ["IT", "Italy"], ["JP", "Japan"], ["HK", "Hong Kong"], ["MY", "Malaysia"], ["IL", "Israel"],
+];
+
 /**
  * Agreement step for an accepted proposal: links to existing agreements, or
  * the form that generates one from the exact accepted version (AT-012).
@@ -71,7 +78,18 @@ export async function GenerateContract({
                 <Textarea id="legal-address" name="client_address" rows={2} required />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="legal-tax">GSTIN or tax ID (optional)</Label>
+                <Label htmlFor="legal-country">Client&apos;s country</Label>
+                <select id="legal-country" name="client_country" defaultValue="IN" className="h-9 w-full rounded-md border bg-background px-2 text-sm">
+                  {COUNTRIES.map(([code, name]) => (
+                    <option key={code} value={code}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">Outside India, invoices are marked as export of services.</p>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="legal-tax">GSTIN, VAT or tax ID (optional)</Label>
                 <Input id="legal-tax" name="client_tax_id" />
               </div>
               <div className="space-y-1">

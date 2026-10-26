@@ -11,10 +11,14 @@ import { formatMoney, minorToMajorString } from "@/modules/proposals/money";
 import { getSessionUser } from "@/server/auth/session";
 import { getPaymentStatus } from "@/server/billing";
 import { AppError, fromPostgrestError } from "@/server/errors";
-import { checkoutProviderId } from "@/server/integrations/payments/registry";
+import { checkoutOptions } from "@/server/integrations/payments/registry";
 import { createSupabaseServerClient } from "@/server/supabase/server";
 
-import { payInvoice } from "../actions";
+import { ActionForm } from "@/components/action-form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+import { payInvoice, reportTransfer } from "../actions";
 import { PayForm } from "./pay-form";
 
 export const metadata: Metadata = { title: "Invoice" };
@@ -88,7 +92,7 @@ export default async function PortalInvoicePage(props: PageProps<"/portal/invoic
   const params = await props.searchParams;
   const payment = await paymentFromQuery(params.payment);
   const awaiting = payment ? isAwaitingConfirmation(payment.status) : false;
-  const providerReady = Boolean(checkoutProviderId());
+  const options = checkoutOptions(invoice.currency);
 
   return (
     <div className="space-y-6">
@@ -100,8 +104,19 @@ export default async function PortalInvoicePage(props: PageProps<"/portal/invoic
           <h1 className="font-heading text-2xl font-semibold tracking-tight">Invoice {invoice.invoice_number}</h1>
           <StatusBadge status={invoice.status} />
         </div>
-        <p className="text-sm text-muted-foreground">{invoice.label}</p>
+        <p className="text-sm text-muted-foreground">
+          {invoice.label} ·{" "}
+          <Link href={`/portal/invoices/${invoice.id}/print`} className="underline underline-offset-4">
+            Printable invoice
+          </Link>
+        </p>
       </header>
+
+      {params.cancelled === "1" ? (
+        <p role="status" className="rounded-lg border p-4 text-sm">
+          You left the checkout before paying, so nothing was charged. Choose a payment method below to try again.
+        </p>
+      ) : null}
 
       {payment ? <PaymentOutcome payment={payment} /> : null}
 
@@ -120,7 +135,11 @@ export default async function PortalInvoicePage(props: PageProps<"/portal/invoic
             <p className="text-lg font-semibold tabular-nums">{formatMoney(invoice.balance_minor, invoice.currency)}</p>
             {invoice.due_at ? <p className="text-xs text-muted-foreground">by {dateFormat.format(new Date(invoice.due_at))}</p> : null}
           </div>
-          <p className="text-xs text-muted-foreground sm:col-span-3">Amounts include applicable taxes as set out in your agreement.</p>
+          <p className="text-xs text-muted-foreground sm:col-span-3">
+            {invoice.export
+              ? "Export of services: invoiced without Indian GST. Any taxes in your country are your responsibility."
+              : "Amounts include applicable taxes as set out in your agreement."}
+          </p>
         </CardContent>
       </Card>
 
@@ -136,10 +155,13 @@ export default async function PortalInvoicePage(props: PageProps<"/portal/invoic
             <CardTitle>
               <h2 className="font-heading text-lg font-semibold">Pay securely</h2>
             </CardTitle>
-            <CardDescription>You&apos;ll be taken to the payment provider. Card and bank details never pass through Atmors.</CardDescription>
+            <CardDescription>
+              You&apos;ll be taken to the payment provider. Card and bank details never pass through Atmors. You pay in{" "}
+              {invoice.currency}; your bank or card may convert it.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            {providerReady ? (
+          <CardContent className="space-y-6">
+            {options.length > 0 ? (
               <PayForm
                 action={payInvoice}
                 invoiceId={invoice.id}
@@ -147,10 +169,42 @@ export default async function PortalInvoicePage(props: PageProps<"/portal/invoic
                 balanceLabel={formatMoney(invoice.balance_minor, invoice.currency)}
                 allowPartial={invoice.allow_partial}
                 defaultAmount={minorToMajorString(invoice.balance_minor)}
+                options={options}
               />
-            ) : (
+            ) : !invoice.bank_instructions ? (
               <p className="text-sm">Online payment isn&apos;t available right now. Reply to your Atmors email for bank transfer details.</p>
-            )}
+            ) : null}
+
+            {invoice.bank_instructions ? (
+              <section aria-labelledby="wire-heading" className="space-y-3 rounded-md border p-4">
+                <h3 id="wire-heading" className="font-medium">
+                  Pay by bank transfer {invoice.export ? "(international wire)" : ""}
+                </h3>
+                <pre className="whitespace-pre-wrap rounded-md bg-muted p-3 font-sans text-sm">{invoice.bank_instructions}</pre>
+                <p className="text-xs text-muted-foreground">
+                  Put invoice number {invoice.invoice_number} in the payment reference. The invoice shows as paid once the money arrives
+                  and finance confirms it, usually 1 to 3 working days.
+                </p>
+                {invoice.transfer_reported_at ? (
+                  <p role="status" className="text-sm">
+                    Thanks, you told us about a transfer on {dateFormat.format(new Date(invoice.transfer_reported_at))}. Finance will
+                    confirm it.
+                  </p>
+                ) : null}
+                <ActionForm
+                  action={reportTransfer}
+                  submitLabel="I've sent the transfer"
+                  variant="outline"
+                  successMessage="Thanks. Finance will confirm the payment when it arrives."
+                >
+                  <input type="hidden" name="invoiceId" value={invoice.id} />
+                  <div className="space-y-1">
+                    <Label htmlFor="transfer-reference">Bank reference (UTR, SWIFT reference or similar)</Label>
+                    <Input id="transfer-reference" name="reference" required minLength={3} maxLength={200} className="max-w-md" />
+                  </div>
+                </ActionForm>
+              </section>
+            ) : null}
           </CardContent>
         </Card>
       ) : null}

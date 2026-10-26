@@ -12,6 +12,12 @@ export const legalIdentitySchema = z.object({
     .transform((value) => (value ? value.toUpperCase() : undefined)),
   signer_name: z.string().trim().min(2, "Who signs for the client?").max(120),
   signer_email: z.email("Enter the signer's email.").transform((value) => value.trim().toLowerCase()),
+  client_country: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z]{2}$/, "Choose the client's country.")
+    .default("IN"),
 });
 export type LegalIdentity = z.infer<typeof legalIdentitySchema>;
 
@@ -41,6 +47,8 @@ const signerSchema = z.object({
   name: z.string(),
   status: z.enum(["pending", "signed", "declined"]),
   signed_at: z.string().nullable(),
+  typed_name: z.string().nullable().optional(),
+  method: z.string().nullable().optional(),
 });
 
 export const scheduleLineSchema = z.object({
@@ -59,6 +67,8 @@ export const clientContractSchema = z.object({
   title: z.string(),
   status: z.string(),
   is_amendment: z.boolean(),
+  provider: z.string().nullable().optional(),
+  client_country: z.string().nullable().optional(),
   client_legal_name: z.string(),
   currency: z.string(),
   total_minor: z.number(),

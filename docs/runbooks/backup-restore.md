@@ -4,12 +4,12 @@
 
 | | Target | How |
 |---|---|---|
-| RPO (data you can lose) | 24 hours on the free plan (5 minutes with Supabase PITR later) | Nightly encrypted dump by the "Database backup" GitHub Actions workflow |
+| RPO (data you can lose) | 6 hours on the free plan (5 minutes with Supabase PITR later) | Encrypted dump every 6 hours by the "Database backup" GitHub Actions workflow |
 | RTO (time to restore) | 4 hours | Restore the dump into a new Supabase project, repoint the app |
-| Retention | 30 days of nightly dumps (workflow artifacts); download a monthly copy to keep longer | GitHub Actions artifacts, encrypted with `BACKUP_PASSPHRASE` |
+| Retention | 30 days of dumps (workflow artifacts); download a monthly copy to keep longer | GitHub Actions artifacts, encrypted with `BACKUP_PASSPHRASE` |
 | Restore owner | Yatharth (CTO/COO), with Yazan informed | |
 
-**Files:** the nightly dump contains file records (names, owners, checksums) but not the uploaded files themselves, which live in Supabase Storage. On the free plan they are not backed up separately, so ask clients to keep their originals; Supabase Pro adds storage backups.
+**Files:** the dump contains file records (names, owners, checksums). The uploaded files themselves live in Supabase Storage; when the `BACKUP_SUPABASE_URL` and `BACKUP_SUPABASE_SECRET_KEY` secrets are set, the same workflow downloads the `client-assets` bucket and stores it encrypted as `clientos-files-<stamp>.tar.gz.gpg`. To restore files: decrypt (`gpg --decrypt --output files.tar.gz clientos-files-<stamp>.tar.gz.gpg`), extract, and upload each file back to the bucket at the same path (the Supabase dashboard or `supabase storage cp`).
 
 Financial and legal records may need longer retention once the accountant and legal review decide (PRD §11).
 
@@ -17,7 +17,7 @@ Financial and legal records may need longer retention once the accountant and le
 
 1. Declare the incident. Freeze changes: set the hosting deployment to maintenance, or pause the cron jobs so no emails or billing checks run against bad data.
 2. Restore into a **new** Supabase project, so the damaged one stays available for investigation:
-   - Download the chosen night's `clientos-db-backup` artifact from GitHub Actions and check it: `sha256sum -c clientos-<stamp>.sha256`.
+   - Download the chosen run's `clientos-backup-<run id>` artifact from GitHub Actions and check it: `sha256sum -c clientos-<stamp>.sha256`.
    - Decrypt: `gpg --decrypt --output backup.dump clientos-<stamp>.dump.gpg` (asks for `BACKUP_PASSPHRASE`).
    - Restore: `pg_restore --no-owner --no-privileges --clean --if-exists --dbname "<new project's session-pooler URL>" backup.dump`, using pg_restore 17.
    - Delete the decrypted `backup.dump` afterwards. It contains client data.

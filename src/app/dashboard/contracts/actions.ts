@@ -10,7 +10,7 @@ import { parseInput } from "@/server/actions/parse";
 import { runAction, type ActionResult } from "@/server/actions/result";
 import { assertCan } from "@/server/authorization/permissions";
 import { requireMemberContext } from "@/server/authorization/member-context";
-import { countersign, sendContractForSignature } from "@/server/contracts";
+import { completeInternalSignature, countersign, sendContractForSignature, startInternalSignature } from "@/server/contracts";
 import { fromPostgrestError } from "@/server/errors";
 import { createSupabaseServerClient } from "@/server/supabase/server";
 
@@ -36,7 +36,7 @@ export async function generateContract(_: unknown, formData: FormData): Promise<
     assertCan(context, "contracts.manage");
     const values = parseInput(generateSchema, {
       ...formObject(formData, ["proposalId", "templateId", "countersignerId"]),
-      legal: formObject(formData, ["client_legal_name", "client_address", "client_tax_id", "signer_name", "signer_email"]),
+      legal: formObject(formData, ["client_legal_name", "client_address", "client_tax_id", "client_country", "signer_name", "signer_email"]),
       policy: {
         required_contract_state: formData.get("requireExecuted") === "on" ? "executed" : "not_required",
         required_payment_items: formData.getAll("requiredItem").map((value) => Number(value)),
@@ -245,5 +245,34 @@ export async function setTemplateState(_: unknown, formData: FormData): Promise<
     if (error) throw fromPostgrestError(error);
     revalidatePath("/dashboard/contracts/templates");
     return null;
+  });
+}
+
+const signStartSchema = z.object({ contractId: z.uuid(), checksum: z.string().regex(/^[0-9a-f]{64}$/) });
+
+/** Built-in countersignature: the named Atmors signer, in an MFA-verified session. */
+export async function requestCountersignCode(formData: FormData): Promise<ActionResult<{ sentTo: string; devCode?: string }>> {
+  return runAction("contract.countersign_code", async (correlationId) => {
+    const context = await requireMemberContext();
+    assertCan(context, "contracts.manage");
+    const values = parseInput(signStartSchema, formObject(formData, ["contractId", "checksum"]));
+    return startInternalSignature(values.contractId, values.checksum, correlationId);
+  });
+}
+
+const signCompleteSchema = signStartSchema.extend({
+  code: z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit code from the email."),
+  typedName: z.string().trim().min(2, "Type your full name to sign.").max(120),
+  consent: z.literal("yes", { error: "Tick the box to confirm." }),
+});
+
+export async function countersignWithCode(_: unknown, formData: FormData): Promise<ActionResult<{ status: string; attemptsLeft?: number }>> {
+  return runAction("contract.countersign_with_code", async (correlationId) => {
+    const context = await requireMemberContext();
+    assertCan(context, "contracts.manage");
+    const values = parseInput(signCompleteSchema, formObject(formData, ["contractId", "checksum", "code", "typedName", "consent"]));
+    const result = await completeInternalSignature(values, correlationId);
+    if (result.status === "signed") revalidateContract(values.contractId);
+    return result;
   });
 }

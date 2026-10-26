@@ -24,6 +24,29 @@ export const clientInvoiceSchema = z.object({
   issued_at: z.string().nullable(),
   due_at: z.string().nullable(),
   can_pay: z.boolean(),
+  tax_minor: z.number().default(0),
+  export: z.boolean().default(false),
+  buyer: z
+    .object({
+      legal_name: z.string().nullable(),
+      address: z.string().nullable(),
+      tax_id: z.string().nullable(),
+      country: z.string().nullable(),
+    })
+    .nullable()
+    .optional(),
+  seller: z
+    .object({
+      legal_name: z.string().nullable(),
+      address: z.string().nullable(),
+      gstin: z.string().nullable(),
+      lut_number: z.string().nullable(),
+      footer: z.string().nullable(),
+    })
+    .nullable()
+    .optional(),
+  bank_instructions: z.string().nullable().optional(),
+  transfer_reported_at: z.string().nullable().optional(),
   payments: z.array(clientPaymentSchema),
 });
 export type ClientInvoice = z.infer<typeof clientInvoiceSchema>;

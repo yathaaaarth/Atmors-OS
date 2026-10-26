@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
@@ -9,11 +10,15 @@ import { parseInput } from "@/server/actions/parse";
 import { runAction, type ActionResult } from "@/server/actions/result";
 import { requireSessionUser } from "@/server/auth/session";
 import { completeSandboxPayment, getPaymentStatus, startPayment } from "@/server/billing";
+import { fromPostgrestError } from "@/server/errors";
+import { RATE_RULES, assertRateLimit } from "@/server/rate-limit";
+import { createSupabaseServerClient } from "@/server/supabase/server";
 import type { CheckoutInstructions } from "@/server/integrations/payments/types";
 
 const paySchema = z.object({
   invoiceId: z.uuid(),
   idempotencyKey: z.uuid(),
+  provider: z.string().regex(/^[a-z0-9_]{2,32}$/),
   amount: z
     .string()
     .optional()
@@ -34,9 +39,10 @@ export type PayResult = { paymentId: string; checkout: CheckoutInstructions; ret
 export async function payInvoice(_: unknown, formData: FormData): Promise<ActionResult<PayResult>> {
   return runAction("payment.start", async (correlationId) => {
     await requireSessionUser();
-    const values = parseInput(paySchema, formObject(formData, ["invoiceId", "idempotencyKey", "amount"]));
+    const values = parseInput(paySchema, formObject(formData, ["invoiceId", "idempotencyKey", "provider", "amount"]));
     const { paymentId, checkout } = await startPayment({
       invoiceId: values.invoiceId,
+      provider: values.provider,
       amountMinor: values.amount,
       idempotencyKey: values.idempotencyKey,
       correlationId,
@@ -60,4 +66,32 @@ export async function sandboxCheckout(_: unknown, formData: FormData): Promise<A
   });
   if (target) redirect(target);
   return result;
+}
+
+const transferSchema = z.object({
+  invoiceId: z.uuid(),
+  reference: z.string().trim().min(3, "Enter the transfer reference from your bank.").max(200),
+  note: z.string().trim().max(1000).optional(),
+});
+
+/**
+ * The client tells finance a bank transfer is on its way. This never marks the
+ * invoice paid: finance records the payment once the money arrives.
+ */
+export async function reportTransfer(_: unknown, formData: FormData): Promise<ActionResult<null>> {
+  return runAction("invoice.transfer_reported", async (correlationId) => {
+    const user = await requireSessionUser();
+    await assertRateLimit(RATE_RULES.publicForm, `user:${user.id}`);
+    const values = parseInput(transferSchema, formObject(formData, ["invoiceId", "reference", "note"]));
+    const supabase = await createSupabaseServerClient();
+    const { error } = await supabase.rpc("client_report_transfer", {
+      p_invoice_id: values.invoiceId,
+      p_reference: values.reference,
+      p_note: values.note ?? (null as unknown as string),
+      p_correlation_id: correlationId,
+    });
+    if (error) throw fromPostgrestError(error);
+    revalidatePath(`/portal/invoices/${values.invoiceId}`);
+    return null;
+  });
 }

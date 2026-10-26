@@ -40,7 +40,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
 
   return (
     <div className="flex flex-1 flex-col md:flex-row">
-      <aside className="flex flex-col gap-4 bg-sidebar px-4 py-4 text-sidebar-foreground md:w-60 md:shrink-0 md:py-6">
+      <aside className="flex flex-col gap-4 bg-sidebar print:hidden px-4 py-4 text-sidebar-foreground md:w-60 md:shrink-0 md:py-6">
         <div className="flex items-center justify-between md:block">
           <BrandMark tone="inverse" />
           <p className="text-xs text-sidebar-foreground/70 md:mt-1">{context.organizationName}</p>

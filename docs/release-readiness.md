@@ -41,7 +41,7 @@ Test suites: `npm test` (unit and database rules on PGlite), `npm run test:secur
 | AT-031 | Notification idempotency | Automated | `db/hardening.test.ts`, `unit/hardening.test.ts` |
 | AT-032 | Audit completeness | Automated | `db/hardening.test.ts` |
 | AT-033 | Mobile and accessibility | Automated | `e2e/accessibility.spec.ts` (axe, desktop and mobile), `e2e/smoke.spec.ts` (keyboard) |
-| AT-034 | Backup and recovery | **Open** | Nightly encrypted backups (`.github/workflows/backup.yml`) and the restore procedure in `runbooks/backup-restore.md`; the restore exercise runs once the first backup exists |
+| AT-034 | Backup and recovery | **Open** | Encrypted database and file backups every 6 hours (`.github/workflows/backup.yml`) and the restore procedure in `runbooks/backup-restore.md`; the restore exercise runs once the first backup exists |
 | AT-035 | Deployment rollback | Documented | `runbooks/deployment-rollback.md`; additive migrations and idempotent jobs. Do one rollback drill (Vercel Instant Rollback) after the first production deploy |
 
 ## Release gates still open
@@ -50,10 +50,10 @@ These need decisions, accounts or professional review outside the code. None of 
 
 1. **Hosting (free tier, D-028):** production Supabase project, Vercel Hobby deployment, GitHub Actions secrets for the scheduler and backups; see `docs/deployment.md`.
 2. **Email:** custom SMTP for Supabase Auth sign-in links, plus `RESEND_API_KEY`/`EMAIL_FROM` and a verified sending domain for notifications (D-010).
-3. **Payments:** Razorpay merchant approval. Then run the PRD §10 provider tests in Razorpay test mode: wrong amount, wrong currency, duplicate, delayed, failed, refund and outage. The sandbox already covers the same paths.
-4. **E-signature vendor:** choose and approve one, then add its adapter (provider register).
+3. **Payments:** Razorpay merchant approval (with international cards) and a PayPal Business account (D-030). Then run the PRD §10 provider tests in Razorpay test mode and the PayPal sandbox: wrong amount, wrong currency, duplicate, delayed, failed, refund and outage. The sandbox already covers the same paths.
+4. **E-signature:** the built-in signer is ready (D-029); a lawyer should confirm it suits your agreements and client countries.
 5. **AI vendor:** run `npm run ai:eval` with each candidate, approve one, then set `AI_PROVIDER`.
-6. **Legal and accounting:** approve the agreement template, privacy notice, consent wording, GST and invoice numbering (D-016), and retention.
+6. **Legal and accounting:** approve the agreement template, privacy notice, consent wording, GST, LUT and export-invoice wording and invoice numbering (D-016, D-030), and retention.
 7. **Security settings in production:**
    - `REQUIRE_STAFF_MFA=true`;
    - edge rate limits in front of `/i/*`, `/login` and `/api/*` (D-009; the app also enforces its own limits);
@@ -61,3 +61,14 @@ These need decisions, accounts or professional review outside the code. None of 
    - a `CRON_SECRET` of at least 32 characters.
 8. **AT-034 restore exercise** and one rollback drill on staging.
 9. **Pilot:** a small number of real clients, with daily review of Operations, AI usage and the audit log for the first two weeks.
+
+## International payments and built-in signing (D-029, D-030)
+
+| Check | Status | Evidence |
+|---|---|---|
+| Built-in signer: only the named signer, emailed code, 5 attempts, checksum-bound, evidence recorded | Pass | `tests/db/international-signing.test.ts`, `tests/security/international.test.ts` |
+| PayPal: order for the exact amount, idempotent create and capture, verified webhooks, refunds and disputes | Pass (unit) | `tests/unit/international.test.ts`; live sandbox run pending PayPal credentials |
+| Bank transfer: instructions on unpaid invoices only; a report creates one finance task, never a payment | Pass | `tests/db/international-signing.test.ts` |
+| Export invoices: country on the agreement, LUT note, seller and buyer details, printable | Pass | DB tests; printable pages under `/portal/invoices/[id]/print` and `/dashboard/billing/invoices/[id]/print` |
+| Legal review of the signing process and template | **Open** | Lawyer |
+| Accountant review of invoice numbering, GST and LUT wording | **Open** | Accountant |

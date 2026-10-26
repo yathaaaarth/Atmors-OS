@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { ActionForm } from "@/components/action-form";
+import { InternalSignForm } from "@/components/contracts/internal-sign-form";
 import { StatusBadge } from "@/components/status-badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { clientContractSchema, describeDue } from "@/modules/contracts/schema";
@@ -12,6 +13,7 @@ import { fromPostgrestError } from "@/server/errors";
 import { createSupabaseServerClient } from "@/server/supabase/server";
 
 import { signContract } from "../actions";
+import { requestSigningCode, signWithCode } from "../sign-actions";
 
 export const metadata: Metadata = { title: "Agreement" };
 
@@ -85,6 +87,29 @@ export default async function PortalContractPage(props: PageProps<"/portal/contr
         </CardContent>
       </Card>
 
+      {contract.signers.some((signer) => signer.status === "signed") ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <h2 className="font-heading text-lg font-semibold">Signature record</h2>
+            </CardTitle>
+            <CardDescription>Each signature is tied to document {contract.checksum.slice(0, 16)}.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2 text-sm">
+              {contract.signers.map((signer) => (
+                <li key={signer.role}>
+                  <span className="font-medium">{signer.typed_name ?? signer.name}</span> ({signer.role === "client" ? contract.client_legal_name : "Atmors"}):{" "}
+                  {signer.status === "signed" && signer.signed_at
+                    ? `signed ${dateTime.format(new Date(signer.signed_at))}${signer.method === "email_code" ? ", identity confirmed by emailed code" : ""}`
+                    : "not yet signed"}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
+
       {contract.schedule.length > 0 ? (
         <Card>
           <CardHeader>
@@ -123,6 +148,16 @@ export default async function PortalContractPage(props: PageProps<"/portal/contr
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {contract.provider === "internal" ? (
+              <InternalSignForm
+                contractId={contract.id}
+                checksum={contract.checksum}
+                signerName={clientSigner?.name ?? ""}
+                onBehalfOf={contract.client_legal_name}
+                requestCode={requestSigningCode}
+                sign={signWithCode}
+              />
+            ) : (
             <ActionForm
               action={signContract}
               submitLabel="Sign agreement"
@@ -139,6 +174,7 @@ export default async function PortalContractPage(props: PageProps<"/portal/contr
                 </span>
               </label>
             </ActionForm>
+            )}
           </CardContent>
         </Card>
       ) : ["sent", "viewed"].includes(contract.status) && !contract.signer_matches_user ? (

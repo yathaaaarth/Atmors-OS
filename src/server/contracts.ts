@@ -1,6 +1,8 @@
 import "server-only";
 
-import { randomUUID } from "node:crypto";
+import { createHash, randomInt, randomUUID } from "node:crypto";
+
+import { headers } from "next/headers";
 
 import { z } from "zod";
 
@@ -8,6 +10,8 @@ import { AppError, fromPostgrestError } from "@/server/errors";
 import { envelopeProviderId, esignProvider, sandboxEsign } from "@/server/integrations/esign/registry";
 import type { SignerRole } from "@/server/integrations/esign/types";
 import { ingestSignatureWebhook } from "@/server/integrations/ingest";
+import { emailProvider } from "@/server/notifications/email";
+import { clientIpKey } from "@/server/rate-limit";
 import { createSupabaseServerClient } from "@/server/supabase/server";
 
 const signingTargetSchema = z.object({
@@ -106,4 +110,60 @@ export async function countersign(contractId: string, checksum: string, correlat
   });
   if (error) throw fromPostgrestError(error);
   await emitSandboxSignature(signingTargetSchema.parse(data), correlationId);
+}
+
+const sha256 = (value: string) => createHash("sha256").update(value).digest("hex");
+
+/**
+ * Built-in signing, step 1: email a one-time code to the named signer. The
+ * code is sent directly (not through the outbox) so it is never stored in
+ * readable form; the database keeps only its hash. In development without an
+ * email service the code is returned so the flow can be tried locally.
+ */
+export async function startInternalSignature(contractId: string, checksum: string, correlationId: string): Promise<{ sentTo: string; devCode?: string }> {
+  const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("begin_internal_signature", {
+    p_contract_id: contractId,
+    p_checksum: checksum,
+    p_code_hash: sha256(code),
+    p_correlation_id: correlationId,
+  });
+  if (error) throw fromPostgrestError(error);
+  const { email } = z.object({ email: z.string() }).parse(data);
+  const provider = emailProvider();
+  const result = await provider.send({
+    to: email,
+    subject: "Your Atmors signing code",
+    text: `Your code to sign the agreement is ${code}.
+
+It expires in 10 minutes. If you didn't ask to sign anything, ignore this email and tell your Atmors contact.
+— Atmors`,
+    idempotencyKey: `signing-code:${randomUUID()}`,
+  });
+  if (!result.ok) throw new AppError("PROVIDER_UNAVAILABLE", { message: "We couldn't email your signing code. Try again in a minute.", detail: result.error });
+  const [local, domain] = email.split("@");
+  const sentTo = `${local[0]}${"•".repeat(Math.max(local.length - 1, 1))}@${domain}`;
+  const devCode = provider.id === "log" && process.env.NODE_ENV !== "production" && process.env.VERCEL_ENV !== "production" ? code : undefined;
+  return { sentTo, devCode };
+}
+
+/** Built-in signing, step 2: verify the code and sign with the typed name; evidence is recorded with the signature. */
+export async function completeInternalSignature(
+  input: { contractId: string; checksum: string; code: string; typedName: string },
+  correlationId: string,
+): Promise<{ status: "signed" | "wrong_code"; attemptsLeft?: number }> {
+  const supabase = await createSupabaseServerClient();
+  const requestHeaders = await headers();
+  const { data, error } = await supabase.rpc("complete_internal_signature", {
+    p_contract_id: input.contractId,
+    p_checksum: input.checksum,
+    p_code_hash: sha256(input.code),
+    p_typed_name: input.typedName,
+    p_evidence: { ip_hash: await clientIpKey(requestHeaders), user_agent: (requestHeaders.get("user-agent") ?? "").slice(0, 300) },
+    p_correlation_id: correlationId,
+  });
+  if (error) throw fromPostgrestError(error);
+  const result = z.object({ status: z.enum(["signed", "wrong_code"]), attempts_left: z.number().optional() }).parse(data);
+  return { status: result.status, attemptsLeft: result.attempts_left };
 }
