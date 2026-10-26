@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { PublicShell } from "@/components/public-shell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { safeRedirectPath } from "@/lib/safe-redirect";
+import { verifiedAssuranceLevel } from "@/server/auth/mfa";
 import { getSessionUser } from "@/server/auth/session";
 import { createSupabaseServerClient } from "@/server/supabase/server";
 
@@ -18,9 +19,9 @@ export default async function MfaPage(props: PageProps<"/mfa">) {
   if (!user) redirect("/login?next=/dashboard");
   const params = await props.searchParams;
   const next = safeRedirectPath(typeof params.next === "string" ? params.next : "/dashboard");
-  const supabase = await createSupabaseServerClient();
-  const { data: level } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  const { data: level } = await verifiedAssuranceLevel();
   if (level?.currentLevel === "aal2") redirect(next);
+  const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.mfa.listFactors();
   const factor = (data?.totp ?? []).find((item) => item.status === "verified");
   if (!factor) redirect("/dashboard/security?setup=1");

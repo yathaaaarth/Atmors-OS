@@ -200,3 +200,10 @@ These are the technical decisions made during implementation. Product decisions 
 - **Decision:** The production Magic Link email template links to `/auth/confirm?token_hash={{ .TokenHash }}&type=email`, which is verified on the server with `verifyOtp`. The default PKCE link (`/auth/callback?code=`) is not used there.
 - **Why:** a PKCE link only completes in the same browser, on the same site address, that requested it. On the first production sign-in it failed with "link invalid" once the email was opened elsewhere, and clients often open email on their phone. The token-hash link is still single use, expires in an hour, and works on any device.
 - **Consequences:** the template lives in the Supabase dashboard, not in the repository; `docs/deployment.md` lists it as a setup step. `/auth/callback` stays for local development.
+
+## D-033: Staff MFA level comes from the Auth server, not the cookie
+
+- **Date:** 2026-10-27 · **Status:** accepted
+- **Decision:** The staff MFA gate (`staffMfaRequirement`, `/mfa`) calls `getAuthenticatorAssuranceLevel(accessToken)`, which loads the user's factors with `getUser(jwt)`. It never calls the no-argument form.
+- **Why:** without a JWT, supabase-js reads `session.user.factors` from the session cookie, which the browser controls. Someone holding a staff member's sign-in link could delete the factors from the cookie, get `nextLevel = aal1`, and skip the TOTP challenge. supabase-js warned about this on every dashboard request ("Using the user object as returned from supabase.auth.getSession() ... could be insecure").
+- **Consequences:** one more Auth request per dashboard request (cached per request). The database does not check `aal`, so this gate is the only MFA enforcement; an RLS check on `auth.jwt()->>'aal'` would be defense in depth.

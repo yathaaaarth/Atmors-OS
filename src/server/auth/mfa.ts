@@ -12,10 +12,22 @@ export type MfaRequirement = "ok" | "challenge" | "enroll";
  * REQUIRE_STAFF_MFA=true, members without one must enroll first.
  */
 export const staffMfaRequirement = cache(async (): Promise<MfaRequirement> => {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  const { data, error } = await verifiedAssuranceLevel();
   if (error || !data) return process.env.REQUIRE_STAFF_MFA === "true" ? "enroll" : "ok";
   return decideMfa(data.currentLevel, data.nextLevel, process.env.REQUIRE_STAFF_MFA === "true");
+});
+
+/**
+ * Assurance level from the Auth server, not the cookie. Without a JWT,
+ * getAuthenticatorAssuranceLevel() reads the user's factors from the session
+ * cookie, which the browser controls: deleting them would skip the challenge.
+ * Passing the access token makes it load the factors with getUser(jwt).
+ */
+export const verifiedAssuranceLevel = cache(async () => {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.auth.getSession();
+  if (!data.session) return { data: null, error: null };
+  return supabase.auth.mfa.getAuthenticatorAssuranceLevel(data.session.access_token);
 });
 
 /** Pure decision, for tests. */
